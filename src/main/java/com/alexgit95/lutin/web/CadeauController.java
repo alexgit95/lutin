@@ -4,6 +4,7 @@ import com.alexgit95.lutin.domain.Statut;
 import com.alexgit95.lutin.service.CadeauService;
 import com.alexgit95.lutin.service.DashboardService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
+import com.alexgit95.lutin.vue.VueListe;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -94,9 +95,13 @@ public class CadeauController {
         if (htmx == null) {
             return "redirect:/listes/" + listeId;
         }
-        model.addAttribute("vue", dashboard.construire(listeId, principal.getName(), tag, page));
+        VueListe vue = dashboard.construire(listeId, principal.getName(), tag, page);
+        model.addAttribute("vue", vue);
+        model.addAttribute("lot", new DashboardService.LotCadeaux(vue.id(), vue.tagActif(), vue.lecteur(),
+            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages()));
         model.addAttribute("statuts", Statut.values());
-        return "liste :: contenu";
+        model.addAttribute("cadeauId", cadeauId);
+        return "liste-fragments :: miseAJourStatut";
     }
 
     private String formulaire(Model model, Long listeId, Long cadeauId, CadeauForm form, Principal principal) {

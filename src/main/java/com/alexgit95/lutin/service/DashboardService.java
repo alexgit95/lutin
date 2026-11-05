@@ -16,9 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Construit le dashboard d'une liste pour son propriétaire ou un lecteur. */
 @Service
@@ -43,6 +45,11 @@ public class DashboardService {
     public record Options(List<VueListe.VuePersonne> personnes, List<VueListe.VueTag> tags) {
     }
 
+    public record LotCadeaux(Long listeId, Long tagActif, boolean lecteur,
+                             List<VueCadeau> cadeaux, List<VueListe.VueGroupe> groupes,
+                             int page, boolean suiteDisponible) {
+    }
+
     /** Destinataires et tags proposables dans le formulaire de cadeau (propriétaire uniquement). */
     public Options options(Long listeId, String login) {
         acces.proprietaire(listeId, login);
@@ -55,11 +62,7 @@ public class DashboardService {
         AccesListeService.Acces a = acces.lecture(listeId, login);
         boolean lecteur = !a.proprietaire();
 
-        PageRequest demande = PageRequest.of(Math.max(page, 0), TAILLE_PAGE,
-                Sort.by("personne.nom", "nom"));
-        Page<Cadeau> resultat = tagId == null
-                ? cadeaux.findByListeId(listeId, demande)
-                : cadeaux.findByListeIdAndTagsId(listeId, tagId, demande);
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page);
         List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
 
         // Les totaux incluent les cadeaux masqués ; la répartition par statut les exclut pour un lecteur.
@@ -73,11 +76,54 @@ public class DashboardService {
 
         List<VueListe.VueTag> vuesTags = tags.findByListeIdOrderByNom(listeId).stream()
                 .map(this::vueTag).toList();
+        List<VueListe.VueGroupe> groupes = grouper(vues);
 
         return new VueListe(listeId, a.liste().getNom(), a.liste().getProprietaire().getLogin(), lecteur,
                 personnes.sommeBudgets(listeId), cadeaux.sommeDebourse(listeId), cadeaux.sommeResteAPayer(listeId),
-                repartition, resultat.getTotalElements(), vuesTags, vues,
+            repartition, resultat.getTotalElements(), vuesTags, vues, groupes,
                 tagId, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1));
+    }
+
+    public LotCadeaux chargerLot(Long listeId, String login, Long tagId, int page) {
+        AccesListeService.Acces a = acces.lecture(listeId, login);
+        boolean lecteur = !a.proprietaire();
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page);
+        List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
+        return new LotCadeaux(listeId, tagId, lecteur, vues, grouper(vues),
+                resultat.getNumber(), resultat.hasNext());
+    }
+
+    private List<VueListe.VueGroupe> grouper(List<VueCadeau> cadeaux) {
+        List<VueListe.VueGroupe> groupes = new ArrayList<>();
+        List<VueCadeau> enCours = new ArrayList<>();
+        Long personneId = null;
+        String personne = null;
+        boolean premier = true;
+
+        for (VueCadeau cadeau : cadeaux) {
+            if (!premier && !Objects.equals(personneId, cadeau.personneId())) {
+                groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours)));
+                enCours = new ArrayList<>();
+            }
+            if (premier || !Objects.equals(personneId, cadeau.personneId())) {
+                personneId = cadeau.personneId();
+                personne = cadeau.personne();
+            }
+            enCours.add(cadeau);
+            premier = false;
+        }
+        if (!premier) {
+            groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours)));
+        }
+        return List.copyOf(groupes);
+    }
+
+    private Page<Cadeau> chargerPage(Long listeId, Long tagId, int page) {
+        PageRequest demande = PageRequest.of(Math.max(page, 0), TAILLE_PAGE,
+                Sort.by("personne.nom", "personne.id", "nom", "id"));
+        return tagId == null
+                ? cadeaux.findByListeId(listeId, demande)
+                : cadeaux.findByListeIdAndTagsId(listeId, tagId, demande);
     }
 
     private VueListe.VuePersonne vuePersonne(Personne p) {

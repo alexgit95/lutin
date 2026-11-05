@@ -107,10 +107,81 @@ class ListesWebTest {
     void leProprietaireVoitLeDashboardComplet() throws Exception {
         mvc.perform(get("/listes/" + listeId).with(user("alice"))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Budget global")))
+                .andExpect(content().string(containsString("id=\"workflow\"")))
+                .andExpect(content().string(containsString("data-statut=\"A_ACHETER\"")))
                 .andExpect(content().string(containsString("Cadeau secret")))
                 .andExpect(content().string(containsString("secret.example")))
                 .andExpect(content().string(containsString("/personnes")))
                 .andExpect(content().string(not(containsString("Ajouter"))));
+    }
+
+    @Test
+    void leChargementContinuRendLeLotSuivantSansPaginationVisible() throws Exception {
+        for (int i = 0; i < 49; i++) {
+            cadeauxService.creer(listeId, "alice", new CadeauCommande(
+                    "Lot " + String.format("%02d", i), null, null, mamanId, false, false, Set.of()));
+        }
+
+        mvc.perform(get("/listes/" + listeId).with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Charger la suite")))
+                .andExpect(content().string(not(containsString("Précédent"))))
+                .andExpect(content().string(not(containsString("Suivant"))));
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("alice")).param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("liste-fragments :: cadeauxLot"))
+                .andExpect(content().string(containsString("Lot 48")))
+                .andExpect(content().string(not(containsString("Lot 00"))))
+                .andExpect(content().string(not(containsString("Charger la suite"))));
+    }
+
+    @Test
+    void leFragmentDeLotRespecteLeMasquageEtLesDroits() throws Exception {
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("bob")).param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Cadeaux masqués")))
+                .andExpect(content().string(containsString("Cadeau secret")))
+                .andExpect(content().string(not(containsString("secret.example"))))
+                .andExpect(content().string(not(containsString("12,34"))));
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("carol")).param("page", "0"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void lesComptesDeLaBarreIgnorentLeFiltreParTag() throws Exception {
+        Long promo = tagsService.creer(listeId, "alice", "promo").getId();
+        cadeauxService.modifier(listeId, visibleId, "alice", new CadeauCommande("Cadeau visible",
+                "https://visible.example/y", new BigDecimal("20"), mamanId, false, false, Set.of(promo)));
+
+        mvc.perform(get("/listes/" + listeId).with(user("alice")).param("tag", promo.toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("aria-label=\"À acheter: 2 cadeaux\"")));
+    }
+
+    @Test
+    void laBarreDuLecteurExclutLesCadeauxMasquesEtSansCommande() throws Exception {
+        mvc.perform(get("/listes/" + listeId).with(user("bob")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("aria-label=\"À acheter: 1 cadeaux\"")))
+                .andExpect(content().string(not(containsString("statut-form"))));
+    }
+
+    @Test
+    void leChangementDeStatutRenvoieLaLigneConfirmeeEtLesNouveauxComptes() throws Exception {
+        mvc.perform(post("/listes/" + listeId + "/cadeaux/" + visibleId + "/statut").with(user("alice")).with(csrf())
+                        .header("HX-Request", "true").param("statut", "COMMANDE"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-statut=\"COMMANDE\"")))
+                .andExpect(content().string(containsString("aria-label=\"À acheter: 1 cadeaux\"")))
+                .andExpect(content().string(containsString("aria-label=\"Commandé: 1 cadeaux\"")));
+    }
+
+    @Test
+    void lAnimationRespecteLaReductionDesMouvements() throws Exception {
+        mvc.perform(get("/js/app.js")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("prefers-reduced-motion")));
+        mvc.perform(get("/css/app.css")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("prefers-reduced-motion")));
     }
 
     @Test
@@ -152,9 +223,11 @@ class ListesWebTest {
         mvc.perform(post("/listes/" + listeId + "/cadeaux/" + visibleId + "/statut").with(user("alice")).with(csrf())
                         .header("HX-Request", "true").param("statut", "COMMANDE"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("id=\"contenu\"")))
+                .andExpect(content().string(containsString("id=\"cadeau-" + visibleId + "\"")))
+                .andExpect(content().string(containsString("hx-swap-oob=\"outerHTML\"")))
                 .andExpect(content().string(not(containsString("<html"))))
-                .andExpect(content().string(containsString("Déjà déboursé")));
+                .andExpect(content().string(containsString("id=\"workflow\"")))
+                .andExpect(content().string(not(containsString("id=\"contenu\""))));
 
         assertThat(cadeaux.findById(visibleId).orElseThrow().getStatut()).isEqualTo(Statut.COMMANDE);
     }

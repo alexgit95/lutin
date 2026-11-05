@@ -61,4 +61,4 @@
 - [x] 9.1 Rédiger le `README.md` fonctionnel (fonctionnalités, profils, variables d'environnement, lancement)
 - [x] 9.2 Créer le `CHANGELOG.md` (format Keep a Changelog, version alignée sur le pom)
 - [x] 9.3 Lancer la compilation et tous les tests avec le Maven de `C:\USINE_LOGICIELLE\apache-maven\bin`
-- [ ] 9.4 Valider le démarrage en `dev` (fait : démarrage et pages publiques OK) et la construction de l'image Docker (à faire : Docker absent de ce poste)
+- [x] 9.4 Valider le démarrage en `dev` (fait : démarrage et pages publiques OK) et la construction de l'image Docker (validée manuellement sur Docker)

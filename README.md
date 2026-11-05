@@ -15,7 +15,7 @@ Un utilisateur crée plusieurs listes (ex. « Noël 2026 »). Chaque liste s'ouv
 
 | Onglet | Contenu |
 |---|---|
-| **Dashboard** | Budget global, déboursé, reste à payer, répartition par statut, liste des cadeaux (filtre par tag, changement de statut direct) |
+| **Dashboard** | Budget global, déboursé, reste à payer, cadeaux regroupés par personne (filtre par tag, changement de statut direct) et barre de workflow persistante |
 | **Personnes** | Création, modification (nom, budget) et suppression des destinataires. Supprimer une personne supprime ses cadeaux |
 | **Partage** | Partage de la liste en lecture seule avec un autre utilisateur choisi dans une liste déroulante |
 | **Réglages** | Renommer ou supprimer la liste |
@@ -35,6 +35,16 @@ Un utilisateur crée plusieurs listes (ex. « Noël 2026 »). Chaque liste s'ouv
 | Reste à payer | Prix des cadeaux « À acheter » (hors tiers, prix renseigné) |
 
 Les cadeaux masqués restent comptés dans les totaux. Pour un lecteur, la répartition par statut exclut les cadeaux masqués.
+
+### Liste des cadeaux du dashboard
+- Les cadeaux sont regroupés par personne destinataire. Deux personnes portant le même nom restent dans des groupes distincts. Pour un lecteur, un cadeau masqué apparaît dans un groupe « Cadeaux masqués » sans nom de destinataire.
+- Pas de pagination visible : les cadeaux se chargent par lots de 50 au fil du défilement. Un groupe qui s'étend sur deux lots continue sans répéter son en-tête. Si un chargement échoue, un bouton « Réessayer » apparaît et les cadeaux déjà affichés sont conservés.
+- Le filtre par tag s'applique à la liste, pas aux compteurs.
+
+### Barre de workflow
+Une barre fixée en bas de l'écran affiche le nombre de cadeaux par statut (À acheter, Commandé, Livré, Emballé, Remis). Ces nombres portent sur toute la liste : ils ne dépendent ni du filtre par tag ni des lots chargés. Pour un lecteur, ils excluent les cadeaux masqués.
+
+Quand le propriétaire change le statut d'un cadeau, seule sa ligne et la barre sont mises à jour, sans recharger la liste ni perdre la position de défilement. Un jeton portant le nom du cadeau rejoint alors l'étape cible et les deux compteurs concernés s'animent. Avec la préférence système « réduire les animations », les compteurs changent sans mouvement.
 
 ### Partage en lecture seule
 Le lecteur voit le dashboard complet de la liste partagée. Toute tentative de modification est refusée (403).

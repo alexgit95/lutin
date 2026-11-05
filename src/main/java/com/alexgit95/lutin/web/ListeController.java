@@ -5,6 +5,7 @@ import com.alexgit95.lutin.domain.Statut;
 import com.alexgit95.lutin.service.DashboardService;
 import com.alexgit95.lutin.service.ListeAchatService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
+import com.alexgit95.lutin.vue.VueListe;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,9 +41,21 @@ public class ListeController {
     @GetMapping("/listes/{id}")
     public String afficher(@PathVariable Long id, @RequestParam(required = false) Long tag,
                            @RequestParam(defaultValue = "0") int page, Principal principal, Model model) {
-        model.addAttribute("vue", dashboard.construire(id, principal.getName(), tag, page));
+        VueListe vue = dashboard.construire(id, principal.getName(), tag, page);
+        model.addAttribute("vue", vue);
+        model.addAttribute("lot", new DashboardService.LotCadeaux(vue.id(), vue.tagActif(), vue.lecteur(),
+            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages()));
         model.addAttribute("statuts", Statut.values());
         return "liste";
+    }
+
+    @GetMapping("/listes/{id}/cadeaux")
+    public String chargerCadeaux(@PathVariable Long id, @RequestParam(required = false) Long tag,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 Principal principal, Model model) {
+        model.addAttribute("lot", dashboard.chargerLot(id, principal.getName(), tag, page));
+        model.addAttribute("statuts", Statut.values());
+        return "liste-fragments :: cadeauxLot";
     }
 
     @GetMapping("/listes/{id}/reglages")

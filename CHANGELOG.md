@@ -2,6 +2,22 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.2.0] - 2026-11-05
+
+### Added
+- Dashboard : cadeaux regroupés par personne destinataire ; les homonymes restent distincts grâce à l'identifiant de la personne. Pour un lecteur, les cadeaux masqués sont dans un groupe neutre, sans destinataire ni statut.
+- Chargement continu des cadeaux par lots de 50 (`GET /listes/{id}/cadeaux`), avec contrôle d'accès serveur, filtre par tag conservé et ordre stable. Reprise sur erreur par un bouton « Réessayer ».
+- Barre de workflow fixée en bas de l'écran avec le nombre de cadeaux par statut, indépendante du filtre par tag, accessible (annonce aux lecteurs d'écran) et adaptée au mobile.
+- Animation du changement de statut : jeton du cadeau vers l'étape cible et compteurs animés, jouée seulement après confirmation du serveur et désactivée avec `prefers-reduced-motion`.
+
+### Changed
+- Le changement de statut HTMX ne renvoie plus tout le dashboard : seule la ligne du cadeau et la barre (swap hors bande) sont remplacées, ce qui préserve les lots chargés et le défilement.
+- Les fragments Thymeleaf du dashboard sont déplacés dans `liste-fragments.html`.
+- Version du `pom.xml` portée à 0.2.0.
+
+### Fixed
+- Aucun.
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

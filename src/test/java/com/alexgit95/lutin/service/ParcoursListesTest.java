@@ -133,6 +133,7 @@ class ParcoursListesTest {
         assertThat(masque.prix()).isNull();
         assertThat(masque.statut()).isNull();
         assertThat(masque.personne()).isNull();
+        assertThat(masque.personneId()).isNull();
         assertThat(masque.tags()).isEmpty();
         assertThat(masque.masque()).isTrue();
         assertThat(lecteur.debourse()).isEqualByComparingTo("40");
@@ -140,10 +141,30 @@ class ParcoursListesTest {
         assertThat(lecteur.repartition().get(Statut.COMMANDE)).isEqualTo(0);
         assertThat(lecteur.lecteur()).isTrue();
 
+            VueCadeau masqueDuLot = dashboard.chargerLot(listeId, "bob", null, 0).cadeaux().stream()
+                .filter(c -> c.nom().equals("Secret")).findFirst().orElseThrow();
+            assertThat(masqueDuLot.personneId()).isNull();
+            assertThat(masqueDuLot.statut()).isNull();
+
         VueCadeau complet = dashboard.construire(listeId, "alice", null, 0).cadeaux().stream()
                 .filter(c -> c.nom().equals("Secret")).findFirst().orElseThrow();
         assertThat(complet.url()).isEqualTo("https://secret.example/x");
         assertThat(complet.prix()).isEqualByComparingTo("40");
+        assertThat(complet.personneId()).isEqualTo(mamanId);
+        }
+
+        @Test
+        void distingueLesPersonnesHomonymesDansLaProjection() {
+        Long homonymeId = personnesService.creer(listeId, "alice", "Maman", BigDecimal.TEN).getId();
+        ajouter("A", null, Statut.A_ACHETER, false, false);
+        cadeauxService.creer(listeId, "alice", new CadeauCommande("B", null, null,
+            homonymeId, false, false, Set.of()));
+
+        VueListe vue = dashboard.construire(listeId, "alice", null, 0);
+
+        assertThat(vue.cadeaux()).extracting(VueCadeau::personneId)
+            .containsExactlyInAnyOrder(mamanId, homonymeId);
+        assertThat(vue.cadeaux()).extracting(VueCadeau::personne).containsOnly("Maman");
     }
 
     @Test
@@ -151,6 +172,10 @@ class ParcoursListesTest {
         assertThatThrownBy(() -> dashboard.construire(listeId, "carol", null, 0))
                 .isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> dashboard.construire(99999L, "alice", null, 0))
+                .isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> dashboard.chargerLot(listeId, "carol", null, 0))
+                .isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> dashboard.chargerLot(99999L, "alice", null, 0))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -267,6 +292,8 @@ class ParcoursListesTest {
         VueListe filtre = dashboard.construire(listeId, "alice", promo, 0);
         assertThat(filtre.cadeaux()).extracting(VueCadeau::nom).containsExactly("Tagué");
         assertThat(filtre.cadeaux().getFirst().tags()).containsExactly("promo");
+            assertThat(dashboard.chargerLot(listeId, "alice", promo, 0).cadeaux())
+                .extracting(VueCadeau::nom).containsExactly("Tagué");
         assertThat(dashboard.construire(listeId, "alice", null, 0).cadeaux()).hasSize(2);
         assertThat(dashboard.construire(listeId, "alice", tagAutreListe, 0).cadeaux()).isEmpty();
     }
@@ -322,10 +349,17 @@ class ParcoursListesTest {
 
         VueListe page0 = dashboard.construire(listeId, "alice", null, 0);
         VueListe page1 = dashboard.construire(listeId, "alice", null, 1);
+        DashboardService.LotCadeaux lot0 = dashboard.chargerLot(listeId, "alice", null, 0);
+        DashboardService.LotCadeaux lot1 = dashboard.chargerLot(listeId, "alice", null, 1);
 
         assertThat(page0.cadeaux()).hasSize(DashboardService.TAILLE_PAGE);
         assertThat(page1.cadeaux()).hasSize(3);
         assertThat(page0.totalPages()).isEqualTo(2);
         assertThat(page0.totalCadeaux()).isEqualTo(DashboardService.TAILLE_PAGE + 3);
+        assertThat(lot0.cadeaux()).hasSize(DashboardService.TAILLE_PAGE);
+        assertThat(lot0.suiteDisponible()).isTrue();
+        assertThat(lot1.cadeaux()).hasSize(3);
+        assertThat(lot1.suiteDisponible()).isFalse();
+            assertThat(lot0.cadeaux().getLast().personneId()).isEqualTo(lot1.cadeaux().getFirst().personneId());
     }
 }

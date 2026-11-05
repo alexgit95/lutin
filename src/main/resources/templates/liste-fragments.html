@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="cadeauxLot(lot, statuts)">
+    <section class="groupe-cadeaux" th:each="groupe : ${lot.groupes()}"
+             th:attr="data-groupe-personne=${groupe.personneId() == null ? 'masques' : groupe.personneId()}">
+        <h3 th:text="${groupe.personneId() == null ? 'Cadeaux masqués' : groupe.personne()}">Personne</h3>
+        <div class="defilement">
+            <table>
+                <thead>
+                <tr><th>Cadeau</th><th>Pour</th><th>Prix</th><th>Tags</th><th>Statut</th><th th:unless="${lot.lecteur()}"></th></tr>
+                </thead>
+                <tbody>
+                <th:block th:each="cadeau : ${groupe.cadeaux()}">
+                    <tr th:replace="~{liste-fragments :: ligneCadeau(${cadeau}, ${lot}, ${statuts})}"></tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <button class="chargement-lot bouton clair" type="button" th:if="${lot.suiteDisponible()}"
+            th:hx-get="@{/listes/{id}/cadeaux(id=${lot.listeId()},tag=${lot.tagActif()},page=${lot.page() + 1})}"
+            hx-trigger="revealed" hx-target="this" hx-swap="outerHTML">
+        Charger la suite
+    </button>
+</th:block>
+
+<th:block th:fragment="ligneCadeau(cadeau, lot, statuts)">
+    <tr th:id="${cadeau.id() == null ? null : 'cadeau-' + cadeau.id()}" class="cadeau-ligne"
+        th:classappend="${cadeau.masque()} ? ' masque'" th:attr="data-statut=${cadeau.statut()}">
+        <td th:if="${lot.lecteur() and cadeau.masque()}" colspan="5">
+            <span class="cadeau-nom" th:text="${cadeau.nom()}">Cadeau</span> <em class="cache">(masqué)</em>
+        </td>
+        <th:block th:unless="${lot.lecteur() and cadeau.masque()}">
+            <td>
+                <a class="cadeau-nom" th:if="${cadeau.url()}" th:href="${cadeau.url()}" target="_blank" rel="noopener noreferrer" th:text="${cadeau.nom()}">Cadeau</a>
+                <span class="cadeau-nom" th:unless="${cadeau.url()}" th:text="${cadeau.nom()}">Cadeau</span>
+                <small th:if="${cadeau.masque()}" class="cache">masqué</small>
+                <small th:if="${cadeau.pourTiers()}" class="tiers">pour un tiers</small>
+            </td>
+            <td th:text="${cadeau.personne()}">Maman</td>
+            <td><span th:replace="~{fragments :: montant(${cadeau.prix()})}"></span></td>
+            <td><span class="tag" th:each="t : ${cadeau.tags()}" th:text="${t}">tag</span></td>
+            <td>
+                <span th:if="${lot.lecteur()}" th:class="'pastille st-' + ${cadeau.statut()}" th:text="${cadeau.statut().libelle}">Statut</span>
+                <form th:unless="${lot.lecteur()}" class="statut-form"
+                      th:action="@{/listes/{id}/cadeaux/{cid}/statut(id=${lot.listeId()},cid=${cadeau.id()})}" method="post"
+                      th:hx-post="@{/listes/{id}/cadeaux/{cid}/statut(id=${lot.listeId()},cid=${cadeau.id()})}"
+                      th:attr="hx-target='#cadeau-' + ${cadeau.id()}"
+                      hx-trigger="change" hx-swap="outerHTML">
+                    <input type="hidden" name="tag" th:value="${lot.tagActif()}" th:if="${lot.tagActif()}">
+                    <input type="hidden" name="page" th:value="${lot.page()}">
+                    <select name="statut" th:class="'st-' + ${cadeau.statut()}" onchange="if(!window.htmx)this.form.submit()">
+                        <option th:each="s : ${statuts}" th:value="${s}" th:text="${s.libelle}"
+                                th:selected="${s == cadeau.statut()}">Statut</option>
+                    </select>
+                </form>
+            </td>
+        </th:block>
+        <td th:unless="${lot.lecteur()}" class="mini">
+            <a th:href="@{/listes/{id}/cadeaux/{cid}/modifier(id=${lot.listeId()},cid=${cadeau.id()})}">modifier</a>
+            <form th:action="@{/listes/{id}/cadeaux/{cid}/supprimer(id=${lot.listeId()},cid=${cadeau.id()})}" method="post" class="inline"
+                  onsubmit="return confirm('Supprimer ce cadeau ?')">
+                <button type="submit" class="lien danger">supprimer</button>
+            </form>
+        </td>
+    </tr>
+</th:block>
+
+<nav th:fragment="barreWorkflow(vue, statuts, oob)" id="workflow" class="workflow-bar" aria-label="Workflow des cadeaux"
+     th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">
+    <ol class="workflow-etapes">
+        <li th:each="s : ${statuts}" th:class="'workflow-etape st-' + ${s}"
+            th:attr="data-statut=${s}, aria-label=${s.libelle} + ': ' + ${vue.repartition().get(s)} + ' cadeaux'">
+            <span class="workflow-libelle" th:text="${s.libelle}">À acheter</span>
+            <b class="workflow-compteur" th:attr="data-count=${vue.repartition().get(s)}"
+               th:text="${vue.repartition().get(s)}">0</b>
+        </li>
+    </ol>
+    <span id="workflow-annonce" class="visuellement-cache" aria-live="polite" aria-atomic="true"></span>
+</nav>
+
+<th:block th:fragment="miseAJourStatut">
+    <th:block th:each="cadeau : ${vue.cadeaux()}" th:if="${cadeau.id() == cadeauId}">
+        <tr th:replace="~{liste-fragments :: ligneCadeau(${cadeau}, ${lot}, ${statuts})}"></tr>
+    </th:block>
+    <template>
+        <nav th:replace="~{liste-fragments :: barreWorkflow(${vue}, ${statuts}, true)}"></nav>
+    </template>
+</th:block>
+</body>
+</html>
