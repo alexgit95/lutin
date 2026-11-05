@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Administration')}"></head>
+<body class="auth">
+<main class="card">
+    <h1>Administration</h1>
+    <p>Clé d'invitation actuelle (variable d'environnement <code>INVITATION_KEY</code>) :</p>
+    <p><code id="invitation-key" th:text="${invitationKey}"></code></p>
+    <p><a th:href="@{/}">Retour</a></p>
+</main>
+</body>
+</html>

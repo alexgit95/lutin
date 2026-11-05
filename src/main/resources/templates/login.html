@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Connexion')}"></head>
+<body class="auth">
+<main class="card">
+    <h1>Connexion</h1>
+    <p class="ok" th:if="${param.inscrit}">Compte créé, vous pouvez vous connecter.</p>
+    <p class="ok" th:if="${param.deconnecte}">Vous êtes déconnecté.</p>
+    <p class="erreur" th:if="${param.error}">Login ou mot de passe incorrect.</p>
+    <form th:action="@{/login}" method="post">
+        <label>Login <input type="text" name="username" required autofocus autocomplete="username"></label>
+        <label>Mot de passe <input type="password" name="password" required autocomplete="current-password"></label>
+        <button type="submit">Se connecter</button>
+    </form>
+    <p><a th:href="@{/register}">Créer un compte</a></p>
+</main>
+</body>
+</html>

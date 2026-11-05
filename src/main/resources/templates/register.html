@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Inscription')}"></head>
+<body class="auth">
+<main class="card">
+    <h1>Inscription</h1>
+    <form th:action="@{/register}" th:object="${registerForm}" method="post">
+        <label>Login
+            <input type="text" th:field="*{login}" autocomplete="username">
+            <span class="erreur" th:if="${#fields.hasErrors('login')}" th:errors="*{login}"></span>
+        </label>
+        <label>Mot de passe
+            <input type="password" th:field="*{password}" autocomplete="new-password">
+            <span class="erreur" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+        </label>
+        <label>Clé d'invitation
+            <input type="text" th:field="*{invitationKey}" autocomplete="off">
+            <span class="erreur" th:if="${#fields.hasErrors('invitationKey')}" th:errors="*{invitationKey}"></span>
+        </label>
+        <button type="submit">S'inscrire</button>
+    </form>
+    <p><a th:href="@{/login}">Déjà inscrit ? Se connecter</a></p>
+</main>
+</body>
+</html>

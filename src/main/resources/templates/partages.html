@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Partage')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <nav th:replace="~{fragments :: onglets(${listeId}, 'partages', false)}"></nav>
+    <h1>Partager la liste</h1>
+    <p>Les personnes ci-dessous peuvent consulter le dashboard en lecture seule. Les cadeaux masqués n'y apparaissent que par leur nom.</p>
+    <div th:replace="~{fragments :: messages}"></div>
+    <form th:action="@{/listes/{id}/partages(id=${listeId})}" method="post" class="ligne">
+        <select name="lecteur" required>
+            <option value="">— choisir un utilisateur —</option>
+            <option th:each="c : ${candidats}" th:value="${c}" th:text="${c}">bob</option>
+        </select>
+        <button type="submit">Partager</button>
+    </form>
+    <p class="vide" th:if="${#lists.isEmpty(partages)}">Cette liste n'est partagée avec personne.</p>
+    <ul class="personnes">
+        <li th:each="p : ${partages}">
+            <span th:text="${p.lecteur()}">bob</span>
+            <form th:action="@{/listes/{id}/partages/{pid}/retirer(id=${listeId},pid=${p.id()})}" method="post" class="inline">
+                <button type="submit" class="lien danger">retirer</button>
+            </form>
+        </li>
+    </ul>
+    <p><a th:href="@{/listes/{id}(id=${listeId})}">&laquo; Retour à la liste</a></p>
+</main>
+</body>
+</html>

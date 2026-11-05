@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Réglages')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <nav th:replace="~{fragments :: onglets(${listeId}, 'reglages', false)}"></nav>
+    <div th:replace="~{fragments :: messages}"></div>
+    <section class="panneau">
+        <h1>Réglages de la liste</h1>
+        <form th:action="@{/listes/{id}/renommer(id=${listeId})}" method="post" class="ligne">
+            <input type="text" name="nom" th:value="${nomListe}" maxlength="100" required>
+            <button type="submit" class="clair">Renommer</button>
+        </form>
+        <form th:action="@{/listes/{id}/supprimer(id=${listeId})}" method="post"
+              onsubmit="return confirm('Supprimer cette liste et tout son contenu ?')">
+            <button type="submit" class="danger">Supprimer la liste</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

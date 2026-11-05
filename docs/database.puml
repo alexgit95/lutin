@@ -1,0 +1,71 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "utilisateur" as utilisateur {
+  * id : bigint <<PK>>
+  --
+  * login : varchar(50) <<unique>>
+  * password_hash : varchar
+  admin_marker : boolean <<unique, non nul = admin>>
+}
+
+entity "liste_achat" as liste_achat {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar(100)
+  * proprietaire_id : bigint <<FK>>
+}
+
+entity "personne" as personne {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar(100)
+  * budget : numeric(12,2)
+  * liste_id : bigint <<FK>>
+}
+
+entity "cadeau" as cadeau {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar
+  url : varchar(2048)
+  prix : numeric(12,2)
+  * statut : varchar(20)
+  * masque : boolean
+  * pour_tiers : boolean
+  * personne_id : bigint <<FK>>
+  * liste_id : bigint <<FK>>
+}
+
+entity "tag" as tag {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar(50)
+  * liste_id : bigint <<FK>>
+  <<unique (nom, liste_id)>>
+}
+
+entity "cadeau_tag" as cadeau_tag {
+  * cadeau_id : bigint <<FK>>
+  * tag_id : bigint <<FK>>
+}
+
+entity "partage" as partage {
+  * id : bigint <<PK>>
+  --
+  * liste_id : bigint <<FK>>
+  * lecteur_id : bigint <<FK>>
+  <<unique (liste_id, lecteur_id)>>
+}
+
+utilisateur ||--o{ liste_achat : possède
+liste_achat ||--o{ personne
+liste_achat ||--o{ cadeau
+liste_achat ||--o{ tag
+liste_achat ||--o{ partage
+utilisateur ||--o{ partage : lecteur
+personne ||--o{ cadeau : destinataire
+cadeau ||--o{ cadeau_tag
+tag ||--o{ cadeau_tag
+@enduml

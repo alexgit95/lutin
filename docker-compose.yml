@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  # ── Base de données PostgreSQL ────────────────────────────────
+  postgres:
+    image: postgres:18-alpine
+    container_name: lutin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lutin
+      POSTGRES_USER: lutin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lutin}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lutin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Application Spring Boot (Thymeleaf intégré) ───────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lutin-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-2424}:8181"
+    environment:
+      # Profil Spring (prod = PostgreSQL)
+      SPRING_PROFILES_ACTIVE: prod
+      # Base de données
+      DB_URL: jdbc:postgresql://postgres:5432/lutin
+      DB_USERNAME: lutin
+      DB_PASSWORD: ${DB_PASSWORD:-lutin}
+      # Clé d'invitation à l'inscription – obligatoire
+      INVITATION_KEY: ${INVITATION_KEY:?INVITATION_KEY doit être défini}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8181/login || true"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:

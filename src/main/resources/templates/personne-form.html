@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Personne')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <h1>Modifier la personne</h1>
+    <div th:replace="~{fragments :: messages}"></div>
+    <form th:action="@{/listes/{id}/personnes/{pid}(id=${listeId},pid=${personneId})}" method="post">
+        <label>Nom <input type="text" name="nom" th:value="${nom}" maxlength="100" required></label>
+        <label>Budget (€) <input type="number" name="budget" th:value="${budget}" min="0" step="0.01"></label>
+        <div class="ligne">
+            <button type="submit">Enregistrer</button>
+            <a class="bouton clair" th:href="@{/listes/{id}/personnes(id=${listeId})}">Annuler</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Mes listes')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <div th:replace="~{fragments :: messages}"></div>
+    <h1>Mes listes d'achat</h1>
+    <form th:action="@{/listes}" method="post" class="ligne">
+        <input type="text" name="nom" placeholder="Nouvelle liste (ex. Noël 2026)" maxlength="100" required>
+        <button type="submit">Créer</button>
+    </form>
+    <p class="vide" th:if="${#lists.isEmpty(mesListes)}">Aucune liste pour le moment.</p>
+    <ul class="cartes">
+        <li th:each="l : ${mesListes}">
+            <a th:href="@{/listes/{id}(id=${l.id()})}" th:text="${l.nom()}">Liste</a>
+        </li>
+    </ul>
+
+    <h2 th:unless="${#lists.isEmpty(listesPartagees)}">Partagées avec moi</h2>
+    <ul class="cartes">
+        <li th:each="l : ${listesPartagees}">
+            <a th:href="@{/listes/{id}(id=${l.id()})}"><span th:text="${l.nom()}">Liste</span>
+                <small>de <span th:text="${l.proprietaire()}">alice</span></small></a>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

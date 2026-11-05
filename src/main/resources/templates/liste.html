@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${vue.nom()})}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+<nav th:replace="~{fragments :: onglets(${vue.id()}, 'dashboard', ${vue.lecteur()})}"></nav>
+<div id="contenu" th:fragment="contenu">
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <div class="entete">
+        <h1 th:text="${vue.nom()}">Liste</h1>
+        <span class="badge" th:if="${vue.lecteur()}">Lecture seule · liste de <b th:text="${vue.proprietaire()}">alice</b></span>
+        <div class="actions" th:unless="${vue.lecteur()}">
+            <a class="bouton" th:href="@{/listes/{id}/cadeaux/nouveau(id=${vue.id()})}">+ Cadeau</a>
+        </div>
+    </div>
+
+    <section class="kpis">
+        <div class="kpi rose"><span>Budget global</span><strong><span th:replace="~{fragments :: montant(${vue.budgetGlobal()})}"></span></strong></div>
+        <div class="kpi orange"><span>Déjà déboursé</span><strong><span th:replace="~{fragments :: montant(${vue.debourse()})}"></span></strong></div>
+        <div class="kpi vert"><span>Reste à payer</span><strong><span th:replace="~{fragments :: montant(${vue.resteAPayer()})}"></span></strong></div>
+        <div class="kpi violet"><span>Cadeaux</span><strong th:text="${vue.totalCadeaux()}">0</strong></div>
+    </section>
+
+    <section class="statuts">
+        <span th:each="e : ${vue.repartition()}" th:class="'pastille st-' + ${e.key}">
+            <span th:text="${e.key.libelle}">Statut</span> <b th:text="${e.value}">0</b>
+        </span>
+    </section>
+
+    <section class="panneau">
+        <h2>Cadeaux</h2>
+        <div class="tags">
+            <a th:href="@{/listes/{id}(id=${vue.id()})}" th:class="${vue.tagActif() == null} ? 'tag actif' : 'tag'">Tous</a>
+            <a th:each="t : ${vue.tags()}" th:href="@{/listes/{id}(id=${vue.id()},tag=${t.id()})}"
+               th:class="${vue.tagActif() == t.id()} ? 'tag actif' : 'tag'" th:text="${t.nom()}">tag</a>
+            <form th:unless="${vue.lecteur()}" th:action="@{/listes/{id}/tags(id=${vue.id()})}" method="post" class="inline">
+                <input type="text" name="nom" placeholder="Nouveau tag" maxlength="50" class="petit" required>
+            </form>
+        </div>
+        <p class="vide" th:if="${#lists.isEmpty(vue.cadeaux())}">Aucun cadeau.</p>
+        <div class="defilement">
+            <table th:unless="${#lists.isEmpty(vue.cadeaux())}">
+                <thead>
+                <tr><th>Cadeau</th><th>Pour</th><th>Prix</th><th>Tags</th><th>Statut</th><th th:unless="${vue.lecteur()}"></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="g : ${vue.cadeaux()}" th:class="${g.masque()} ? 'masque'">
+                    <td th:if="${vue.lecteur() and g.masque()}" colspan="5">
+                        <span th:text="${g.nom()}">Cadeau</span> <em class="cache">(masqué)</em>
+                    </td>
+                    <th:block th:unless="${vue.lecteur() and g.masque()}">
+                        <td>
+                            <a th:if="${g.url()}" th:href="${g.url()}" target="_blank" rel="noopener noreferrer" th:text="${g.nom()}">Cadeau</a>
+                            <span th:unless="${g.url()}" th:text="${g.nom()}">Cadeau</span>
+                            <small th:if="${g.masque()}" class="cache">masqué</small>
+                            <small th:if="${g.pourTiers()}" class="tiers">pour un tiers</small>
+                        </td>
+                        <td th:text="${g.personne()}">Maman</td>
+                        <td><span th:replace="~{fragments :: montant(${g.prix()})}"></span></td>
+                        <td><span class="tag" th:each="t : ${g.tags()}" th:text="${t}">tag</span></td>
+                        <td>
+                            <span th:if="${vue.lecteur()}" th:class="'pastille st-' + ${g.statut()}" th:text="${g.statut().libelle}">Statut</span>
+                            <form th:unless="${vue.lecteur()}"
+                                  th:action="@{/listes/{id}/cadeaux/{cid}/statut(id=${vue.id()},cid=${g.id()})}" method="post"
+                                  th:hx-post="@{/listes/{id}/cadeaux/{cid}/statut(id=${vue.id()},cid=${g.id()})}"
+                                  hx-trigger="change" hx-target="#contenu" hx-swap="outerHTML">
+                                <input type="hidden" name="tag" th:value="${vue.tagActif()}" th:if="${vue.tagActif()}">
+                                <input type="hidden" name="page" th:value="${vue.page()}">
+                                <select name="statut" th:class="'st-' + ${g.statut()}" onchange="if(!window.htmx)this.form.submit()">
+                                    <option th:each="s : ${statuts}" th:value="${s}" th:text="${s.libelle}"
+                                            th:selected="${s == g.statut()}">Statut</option>
+                                </select>
+                            </form>
+                        </td>
+                    </th:block>
+                    <td th:unless="${vue.lecteur()}" class="mini">
+                        <a th:href="@{/listes/{id}/cadeaux/{cid}/modifier(id=${vue.id()},cid=${g.id()})}">modifier</a>
+                        <form th:action="@{/listes/{id}/cadeaux/{cid}/supprimer(id=${vue.id()},cid=${g.id()})}" method="post" class="inline"
+                              onsubmit="return confirm('Supprimer ce cadeau ?')">
+                            <button type="submit" class="lien danger">supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav class="pagination" th:if="${vue.totalPages() > 1}">
+            <a th:if="${vue.page() > 0}" th:href="@{/listes/{id}(id=${vue.id()},tag=${vue.tagActif()},page=${vue.page() - 1})}">&laquo; Précédent</a>
+            <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 1</span>
+            <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/listes/{id}(id=${vue.id()},tag=${vue.tagActif()},page=${vue.page() + 1})}">Suivant &raquo;</a>
+        </nav>
+    </section>
+</div>
+</main>
+</body>
+</html>
