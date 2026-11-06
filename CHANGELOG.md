@@ -2,6 +2,35 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.7.0] - 2026-11-06
+
+### Added
+- Onglet Personnes : barre de budget par personne (dépensé en teinte pleine, reste à payer en teinte claire, budget en repère) avec les montants écrits, une description `aria-label`, un cas « budget à 0 » sans barre et un dépassement affiché en rouge avec un repère.
+- `CadeauRepository.sommesParPersonne` : une requête agrégée par liste (mêmes règles que le dashboard), `PersonneService.lister` et `VuePersonneBudget`. La somme par personne égale le « Déjà déboursé » et le « Reste à payer » du dashboard.
+- Tests : `PersonnesBudgetTest` (8) et `PersonnesBudgetWebTest` (6).
+
+### Changed
+- Les actions d'une personne (+ cadeau, modifier, supprimer) passent dans un sous-menu natif `<details>` ouvert par un bouton « ⋯ », refermé par un court script au clic ailleurs et sur Échap ; la confirmation de suppression est conservée.
+- Version du `pom.xml` portée à 0.7.0.
+
+### Fixed
+- Aucun.
+
+## [0.6.0] - 2026-11-06
+
+### Added
+- Import de personnes depuis une autre liste d'achat (onglet Personnes) : panneau listant vos autres listes avec leur nombre de personnes, aperçu (`GET /listes/{id}/personnes/import`) avec les personnes cochées par défaut, puis import (`POST`) qui copie nom et budget. Les cadeaux ne sont pas copiés et la copie est indépendante de la source.
+- Règle de doublon : une personne dont le nom existe déjà dans la cible (casse et espaces en bordure ignorés) est signalée « déjà présente » et jamais importée. Compte rendu : personnes importées, budget total ajouté, personnes ignorées.
+- Contrôles serveur : source et cible doivent appartenir à l'utilisateur (une liste partagée est refusée en 403), source différente de la cible, identifiants relus en base et limités à la source, doublons recalculés à l'import.
+- Message de succès `info` dans le fragment de messages.
+- Tests : `ImportPersonnesTest` (11) et `ImportPersonnesWebTest` (8). Aucun changement de schéma.
+
+### Changed
+- Version du `pom.xml` portée à 0.6.0.
+
+### Fixed
+- Aucun.
+
 ## [0.5.0] - 2026-11-06
 
 ### Added

@@ -52,4 +52,12 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
     @Query("select c.statut, count(c) from Cadeau c where c.liste.id = :listeId "
             + "and (:inclureMasques = true or c.masque = false) group by c.statut")
     List<Object[]> compterParStatut(@Param("listeId") Long listeId, @Param("inclureMasques") boolean inclureMasques);
+
+    // Mêmes règles que sommeDebourse et sommeResteAPayer, ventilées par personne : (personneId, dépensé, à payer).
+    @Query("select c.personne.id, "
+            + "coalesce(sum(case when c.statut <> com.alexgit95.lutin.domain.Statut.A_ACHETER then c.prix end), 0), "
+            + "coalesce(sum(case when c.statut = com.alexgit95.lutin.domain.Statut.A_ACHETER then c.prix end), 0) "
+            + "from Cadeau c where c.liste.id = :listeId and c.pourTiers = false and c.prix is not null "
+            + "group by c.personne.id")
+    List<Object[]> sommesParPersonne(@Param("listeId") Long listeId);
 }

@@ -36,6 +36,7 @@
 </nav>
 <div th:fragment="messages">
     <p class="erreur bandeau" th:if="${erreur}" th:text="${erreur}"></p>
+    <p class="info" th:if="${info}" th:text="${info}"></p>
 </div>
 <span th:fragment="montant(valeur)" th:text="${valeur == null ? '—' : #numbers.formatDecimal(valeur, 1, 'WHITESPACE', 2, 'COMMA') + ' €'}"></span>
 </body>

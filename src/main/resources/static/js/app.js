@@ -189,3 +189,19 @@ document.addEventListener('submit', (evenement) => {
         memoriserNomInvite(evenement.target.elements.nom.value.trim());
     }
 });
+
+// Sous-menus d'actions : un seul ouvert à la fois, refermé au clic ailleurs et sur Échap.
+function fermerMenus(sauf) {
+    document.querySelectorAll('details.menu-actions[open]').forEach((menu) => {
+        if (menu !== sauf) {
+            menu.removeAttribute('open');
+        }
+    });
+}
+
+document.addEventListener('click', (evenement) => fermerMenus(evenement.target.closest('details.menu-actions')));
+document.addEventListener('keydown', (evenement) => {
+    if (evenement.key === 'Escape') {
+        fermerMenus(null);
+    }
+});

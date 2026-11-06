@@ -12,6 +12,8 @@ public interface PersonneRepository extends JpaRepository<Personne, Long> {
 
     List<Personne> findByListeIdOrderByNom(Long listeId);
 
+    long countByListeId(Long listeId);
+
     void deleteByListeId(Long listeId);
 
     @Query("select coalesce(sum(p.budget), 0) from Personne p where p.liste.id = :listeId")

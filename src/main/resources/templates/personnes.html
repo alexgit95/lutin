@@ -14,20 +14,48 @@
             <button type="submit">Ajouter</button>
         </form>
         <p class="vide" th:if="${#lists.isEmpty(personnes)}">Aucune personne.</p>
-        <ul class="personnes">
-            <li th:each="p : ${personnes}">
-                <span th:text="${p.nom()}">Maman</span>
-                <b><span th:replace="~{fragments :: montant(${p.budget()})}"></span></b>
-                <span class="mini">
-                    <a th:href="@{/listes/{id}/cadeaux/nouveau(id=${listeId},personneId=${p.id()})}">+ cadeau</a>
-                    <a th:href="@{/listes/{id}/personnes/{pid}/modifier(id=${listeId},pid=${p.id()})}">modifier</a>
-                    <form th:action="@{/listes/{id}/personnes/{pid}/supprimer(id=${listeId},pid=${p.id()})}" method="post" class="inline"
-                          onsubmit="return confirm('Supprimer cette personne et tous ses cadeaux ?')">
-                        <button type="submit" class="lien danger">supprimer</button>
-                    </form>
-                </span>
+        <ul class="personnes-budget">
+            <li class="personne-ligne" th:each="p : ${personnes}" th:classappend="${p.depasse()} ? 'depasse'">
+                <div class="personne-tete">
+                    <span class="personne-nom" th:text="${p.nom()}">Maman</span>
+                    <details class="menu-actions">
+                        <summary th:attr="aria-label='Actions pour ' + ${p.nom()}">&#8943;</summary>
+                        <div class="menu-liste">
+                            <a th:href="@{/listes/{id}/cadeaux/nouveau(id=${listeId},personneId=${p.id()})}">+ Cadeau</a>
+                            <a th:href="@{/listes/{id}/personnes/{pid}/modifier(id=${listeId},pid=${p.id()})}">Modifier</a>
+                            <form th:action="@{/listes/{id}/personnes/{pid}/supprimer(id=${listeId},pid=${p.id()})}" method="post"
+                                  onsubmit="return confirm('Supprimer cette personne et tous ses cadeaux ?')">
+                                <button type="submit" class="lien danger">Supprimer</button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+                <div class="budget-barre" th:unless="${p.sansBarre()}" role="img"
+                     th:attr="aria-label='Dépensé ' + ${#numbers.formatDecimal(p.depense(), 1, 'WHITESPACE', 2, 'COMMA')} + ' €, à payer ' + ${#numbers.formatDecimal(p.resteAPayer(), 1, 'WHITESPACE', 2, 'COMMA')} + ' €, budget ' + ${#numbers.formatDecimal(p.budget(), 1, 'WHITESPACE', 2, 'COMMA')} + ' €'">
+                    <span class="seg-depense" th:style="'width:' + ${p.pourcentDepense()} + '%'"></span>
+                    <span class="seg-reste" th:style="'width:' + ${p.pourcentReste()} + '%'"></span>
+                    <span class="repere-budget" th:if="${p.depasse()}" th:style="'left:' + ${p.pourcentBudget()} + '%'"></span>
+                </div>
+                <p class="budget-texte">
+                    dépensé <b><span th:replace="~{fragments :: montant(${p.depense()})}"></span></b>
+                    &middot; à payer <b><span th:replace="~{fragments :: montant(${p.resteAPayer()})}"></span></b>
+                    &middot; budget <b><span th:replace="~{fragments :: montant(${p.budget()})}"></span></b>
+                    <span class="depassement" th:if="${p.depasse()}">dépassé de
+                        <b><span th:replace="~{fragments :: montant(${p.depassement()})}"></span></b></span>
+                </p>
             </li>
         </ul>
+    </section>
+    <section class="panneau" th:unless="${#lists.isEmpty(sources)}">
+        <h2>Importer depuis une autre liste</h2>
+        <form th:action="@{/listes/{id}/personnes/import(id=${listeId})}" method="get" class="ligne">
+            <select name="source" required>
+                <option value="">— choisir une liste —</option>
+                <option th:each="s : ${sources}" th:value="${s.id()}"
+                        th:text="${s.nom()} + ' (' + ${s.nombrePersonnes()} + ')'">Noël 2025 (3)</option>
+            </select>
+            <button type="submit" class="clair">Prévisualiser</button>
+        </form>
     </section>
 </main>
 </body>

@@ -18,9 +18,24 @@ Un utilisateur crée plusieurs listes (ex. « Noël 2026 »). Chaque liste s'ouv
 | Onglet | Contenu |
 |---|---|
 | **Dashboard** | Budget global, déboursé, reste à payer, cadeaux regroupés par personne (filtre par tag, changement de statut direct) et barre de workflow persistante |
-| **Personnes** | Création, modification (nom, budget) et suppression des destinataires. Supprimer une personne supprime ses cadeaux |
+| **Personnes** | Création, modification (nom, budget) et suppression des destinataires, via un sous-menu `⋯` par personne (+ cadeau, modifier, supprimer). Chaque personne affiche une barre de budget : dépensé, reste à payer et budget. Import des personnes d'une autre de vos listes (voir ci-dessous) |
 | **Partage** | Partage de la liste en lecture seule avec un autre utilisateur choisi dans une liste déroulante |
 | **Réglages** | Renommer ou supprimer la liste |
+
+### Budget par personne
+Dans l'onglet **Personnes**, chaque ligne montre une barre : le **dépensé** en teinte pleine (cadeaux au statut Commandé ou plus), le **reste à payer** en teinte claire (cadeaux « À acheter » avec prix) et le **budget**, avec les trois montants écrits et une description pour les lecteurs d'écran.
+
+- Les règles sont celles du dashboard : cadeaux pour un tiers et cadeaux sans prix exclus, cadeaux masqués comptés. La somme des dépensés des personnes égale le « Déjà déboursé » du dashboard et celle des restes à payer son « Reste à payer ».
+- Budget à 0 : texte seul, sans barre. Si le dépensé plus le reste à payer dépasse le budget, la barre s'adapte, un repère marque le budget et la mention « dépassé de X € » apparaît en rouge.
+- Le sous-menu `⋯` se referme au clic ailleurs, à l'ouverture d'un autre menu et avec Échap ; la suppression garde sa confirmation.
+
+### Import de personnes depuis une autre liste
+Dans l'onglet **Personnes**, si vous possédez au moins une autre liste, le panneau « Importer depuis une autre liste » ouvre un **aperçu** des personnes de la liste choisie, avec leur budget.
+
+- Les personnes sont **cochées par défaut**. Celles dont le nom existe déjà dans la liste courante (sans tenir compte de la casse ni des espaces en bordure) sont grisées « déjà présente » et ne sont jamais importées.
+- L'import copie le **nom et le budget** uniquement : les cadeaux ne sont pas copiés, et la copie est indépendante de la source. Le budget global de la liste augmente du budget importé.
+- Un compte rendu indique les personnes importées, le budget total ajouté et les personnes ignorées.
+- Seules **vos** listes sont concernées, source comme cible. Une liste simplement partagée avec vous ne peut pas servir de source (403).
 
 ### Cadeaux
 - Nom obligatoire, URL facultative, prix facultatif, destinataire, tags.

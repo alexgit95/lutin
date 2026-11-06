@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Importer des personnes')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <nav th:replace="~{fragments :: onglets(${listeId}, 'personnes', false)}"></nav>
+    <div th:replace="~{fragments :: messages}"></div>
+    <section class="panneau">
+        <h1>Importer depuis « <span th:text="${apercu.sourceNom()}">Noël 2025</span> »</h1>
+        <p class="vide" th:if="${#lists.isEmpty(apercu.personnes())}">Cette liste ne contient aucune personne.</p>
+        <p class="vide" th:if="${!#lists.isEmpty(apercu.personnes()) and apercu.nombreImportables() == 0}">
+            Toutes les personnes de cette liste sont déjà présentes.</p>
+        <form th:action="@{/listes/{id}/personnes/import(id=${listeId})}" method="post"
+              th:unless="${#lists.isEmpty(apercu.personnes())}">
+            <input type="hidden" name="source" th:value="${apercu.sourceId()}">
+            <ul class="personnes">
+                <li th:each="p : ${apercu.personnes()}" th:classappend="${p.dejaPresente()} ? 'deja'">
+                    <label class="case">
+                        <input type="checkbox" name="ids" th:value="${p.id()}" th:checked="${!p.dejaPresente()}"
+                               th:disabled="${p.dejaPresente()}">
+                        <span th:text="${p.nom()}">Maman</span>
+                        <small class="cache" th:if="${p.dejaPresente()}">déjà présente</small>
+                    </label>
+                    <b><span th:replace="~{fragments :: montant(${p.budget()})}"></span></b>
+                </li>
+            </ul>
+            <p>Budget des personnes importables : <b><span th:replace="~{fragments :: montant(${apercu.totalImportable()})}"></span></b></p>
+            <div class="ligne">
+                <button type="submit" th:disabled="${apercu.nombreImportables() == 0}"
+                        th:text="'Importer ' + ${apercu.nombreImportables()} + (${apercu.nombreImportables() > 1} ? ' personnes' : ' personne')">Importer</button>
+                <a class="bouton clair" th:href="@{/listes/{id}/personnes(id=${listeId})}">Annuler</a>
+            </div>
+        </form>
+        <div class="ligne" th:if="${#lists.isEmpty(apercu.personnes())}">
+            <a class="bouton clair" th:href="@{/listes/{id}/personnes(id=${listeId})}">Retour</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

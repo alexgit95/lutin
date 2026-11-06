@@ -164,3 +164,27 @@ tr.masque td { color: #777; }
     .grande-tuile { transition: none; }
     .grande-tuile:hover, .grande-tuile:focus-visible { transform: none; }
 }
+.info { margin: 0 0 1rem; padding: .6rem .8rem; border-radius: 8px; background: #e6f6ec; color: #1e8449; font-size: .9rem; }
+.personnes li.deja { opacity: .55; }
+
+.personnes-budget { list-style: none; margin: 0; padding: 0; }
+.personne-ligne { padding: .8rem 0; border-bottom: 1px solid var(--bord); }
+.personne-tete { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.personne-nom { font-weight: 600; }
+.menu-actions { position: relative; }
+.menu-actions summary { display: flex; width: 2.2rem; height: 2.2rem; align-items: center; justify-content: center; border-radius: 999px; background: #e8e9fb; color: var(--accent); font-size: 1.2rem; line-height: 1; list-style: none; cursor: pointer; user-select: none; }
+.menu-actions summary::-webkit-details-marker { display: none; }
+.menu-actions[open] summary { background: var(--accent); color: #fff; }
+.menu-liste { position: absolute; z-index: 6; top: calc(100% + .3rem); right: 0; display: flex; min-width: 10rem; flex-direction: column; padding: .3rem; border-radius: 12px; background: #fff; box-shadow: 0 8px 28px rgba(27, 27, 58, .18); }
+.menu-liste a, .menu-liste button { display: block; width: 100%; padding: .55rem .8rem; border-radius: 8px; text-align: left; text-decoration: none; color: var(--encre); font-size: .9rem; }
+.menu-liste a:hover, .menu-liste button:hover { background: #f1f2fb; }
+.menu-liste form { margin: 0; }
+.menu-liste button.danger { color: #c0392b; }
+.budget-barre { position: relative; display: flex; height: .7rem; margin: .6rem 0 .35rem; overflow: hidden; border-radius: 999px; background: #e9ebf3; }
+.seg-depense { background: var(--accent); }
+.seg-reste { background: #b9b6f5; }
+.repere-budget { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--encre); }
+.budget-texte { margin: 0; font-size: .85rem; opacity: .85; }
+.personne-ligne.depasse .seg-depense { background: #c0392b; }
+.personne-ligne.depasse .seg-reste { background: #e8a39b; }
+.depassement { margin-left: .4rem; color: #c0392b; font-weight: 600; }
