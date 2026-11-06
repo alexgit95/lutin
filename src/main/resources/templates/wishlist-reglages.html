@@ -7,6 +7,32 @@
     <nav th:replace="~{fragments :: ongletsWishlist(${wishlistId}, 'reglages')}"></nav>
     <div th:replace="~{fragments :: messages}"></div>
     <section class="panneau">
+        <h2>Wishlist publique</h2>
+        <div th:if="${lienPublic == null}">
+            <p>Un lien permet à n'importe qui, même sans compte, de consulter la wishlist et de prendre un article en indiquant son nom.</p>
+            <p class="erreur bandeau">Attention : si vous ouvrez ce lien sans être connecté, vous verrez ce qui est pris et par qui.</p>
+            <form th:action="@{/wishlists/{id}/public/activer(id=${wishlistId})}" method="post">
+                <button type="submit">Rendre publique</button>
+            </form>
+        </div>
+        <div th:unless="${lienPublic == null}">
+            <label>Lien public
+                <input type="text" readonly th:value="${lienPublic}" onfocus="this.select()">
+            </label>
+            <div class="ligne">
+                <button type="button" class="clair" data-copier th:attr="data-lien=${lienPublic}">Copier le lien</button>
+                <form th:action="@{/wishlists/{id}/public/regenerer(id=${wishlistId})}" method="post"
+                      onsubmit="return confirm('Les liens déjà diffusés ne fonctionneront plus. Continuer ?')">
+                    <button type="submit" class="clair">Régénérer le lien</button>
+                </form>
+                <form th:action="@{/wishlists/{id}/public/desactiver(id=${wishlistId})}" method="post"
+                      onsubmit="return confirm('Tous les liens cesseront de fonctionner. Continuer ?')">
+                    <button type="submit" class="danger">Rendre privée</button>
+                </form>
+            </div>
+        </div>
+    </section>
+    <section class="panneau">
         <h1>Réglages de la wishlist</h1>
         <form th:action="@{/wishlists/{id}/renommer(id=${wishlistId})}" method="post" class="ligne">
             <input type="text" name="nom" th:value="${nomWishlist}" maxlength="100" required>

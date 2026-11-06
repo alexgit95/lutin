@@ -64,6 +64,7 @@ entity "wishlist" as wishlist {
   --
   * nom : varchar(100)
   * nom_cle : varchar(100) <<nom nettoyé en minuscules>>
+  jeton_public : varchar(64) <<unique, nul = privée, secret du lien /p/{jeton}>>
   * proprietaire_id : bigint <<FK>>
   <<unique (proprietaire_id, nom_cle)>>
 }
@@ -75,6 +76,7 @@ entity "souhait" as souhait {
   url : varchar(2048)
   prix : numeric(12,2)
   pris_par_nom : varchar(100) <<texte, sans FK : login ou nom d'invité>>
+  pris_par_invite : boolean <<nul = faux ; vrai pour un nom saisi via le lien public>>
   pris_le : timestamp
   * wishlist_id : bigint <<FK>>
 }

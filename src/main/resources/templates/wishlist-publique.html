@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title th:text="${vue.nom()} + ' - Lutin'">Lutin</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+<header class="topbar"><span class="brand">Lutin</span></header>
+<main class="page">
+    <div class="entete-wishlist">
+        <h1 th:text="${vue.nom()}">Wishlist</h1>
+    </div>
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <p class="vide" th:if="${#lists.isEmpty(vue.souhaits())}">Aucun article pour le moment.</p>
+    <ul class="tuiles">
+        <li class="tuile" th:each="s : ${vue.souhaits()}" th:classappend="${s.prisPar() != null} ? 'pris'">
+            <span class="ruban-pris" th:if="${s.prisPar() != null}">&#10003; Pris par <b th:text="${s.prisPar()}">bob</b></span>
+            <div class="tuile-visuel" th:classappend="'teinte-' + ${s.id() % 6}" th:text="${s.initiale()}" aria-hidden="true">A</div>
+            <div class="tuile-corps">
+                <h3 class="tuile-titre" th:text="${s.nom()}">Article</h3>
+                <span class="tuile-hote" th:if="${s.hote() != null}" th:text="${s.hote()}">exemple.fr</span>
+                <div class="tuile-prix" th:if="${s.prix() != null}"><span th:replace="~{fragments :: montant(${s.prix()})}"></span></div>
+            </div>
+            <div class="tuile-pied">
+                <a class="bouton clair" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer">Voir</a>
+                <th:block th:if="${s.prisPar() == null}">
+                    <button type="button" th:if="${invite}"
+                            th:attr="data-prendre-url=@{/p/{j}/souhaits/{s}/pris(j=${jeton},s=${s.id()})}">Je le prends</button>
+                    <form th:unless="${invite}" method="post"
+                          th:action="@{/p/{j}/souhaits/{s}/pris(j=${jeton},s=${s.id()})}">
+                        <input type="hidden" name="page" th:value="${vue.page()}">
+                        <button type="submit">Je le prends</button>
+                    </form>
+                </th:block>
+                <form th:if="${s.prisPar() != null}" method="post"
+                      th:action="@{/p/{j}/souhaits/{s}/libere(j=${jeton},s=${s.id()})}">
+                    <input type="hidden" name="page" th:value="${vue.page()}">
+                    <button type="submit" class="lien">Libérer</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <div class="pagination" th:if="${vue.totalPages() > 1}">
+        <a th:if="${vue.page() > 0}" th:href="@{/p/{j}(j=${jeton},page=${vue.page() - 1})}">&laquo; Précédent</a>
+        <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 2</span>
+        <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/p/{j}(j=${jeton},page=${vue.page() + 1})}">Suivant &raquo;</a>
+    </div>
+
+    <dialog id="dialogue-nom" class="dialogue" th:if="${invite}">
+        <form id="formulaire-nom" method="post" th:action="@{/p/{j}(j=${jeton})}">
+            <h2>Votre nom</h2>
+            <p>Indiquez votre nom pour que les autres sachent que vous prenez cet article.</p>
+            <label>Nom
+                <input type="text" name="nom" maxlength="100" required autocomplete="name">
+            </label>
+            <input type="hidden" name="page" th:value="${vue.page()}">
+            <div class="ligne">
+                <button type="submit">Valider</button>
+                <button type="button" class="clair" data-fermer-dialogue>Annuler</button>
+            </div>
+        </form>
+    </dialog>
+</main>
+</body>
+</html>

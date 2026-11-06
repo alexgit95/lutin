@@ -6,7 +6,11 @@
 <main class="page">
     <div class="entete-wishlist">
         <h1 th:text="${vue.nom()}">Wishlist</h1>
-        <a class="bouton" th:href="@{/wishlists/{id}/souhaits/nouveau(id=${vue.id()})}">+ Ajouter un article</a>
+        <div class="actions">
+            <button type="button" class="bouton clair" data-partager th:if="${lienPublic != null}"
+                    th:attr="data-lien=${lienPublic},data-titre=${vue.nom()}">Partager</button>
+            <a class="bouton" th:href="@{/wishlists/{id}/souhaits/nouveau(id=${vue.id()})}">+ Ajouter un article</a>
+        </div>
     </div>
     <nav th:replace="~{fragments :: ongletsWishlist(${vue.id()}, 'articles')}"></nav>
     <div th:replace="~{fragments :: messages}"></div>

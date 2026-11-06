@@ -9,6 +9,8 @@ import com.alexgit95.lutin.repository.WishlistRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 
 @Service
@@ -19,6 +21,7 @@ public class WishlistService {
     }
 
     private static final String MESSAGE_DOUBLON = "Vous avez déjà une wishlist de ce nom";
+    private static final SecureRandom ALEA = new SecureRandom();
 
     private final WishlistRepository wishlists;
     private final UtilisateurRepository utilisateurs;
@@ -83,6 +86,43 @@ public class WishlistService {
         souhaits.supprimerDeLaWishlist(wishlistId);
         partages.supprimerDeLaWishlist(wishlistId);
         wishlists.delete(wishlist);
+    }
+
+    /** Jeton du lien public, nul si la wishlist est privée. */
+    @Transactional(readOnly = true)
+    public String jetonPublic(Long wishlistId, String login) {
+        return acces.proprietaire(wishlistId, login).getJetonPublic();
+    }
+
+    /** Rend la wishlist publique ; sans effet si elle l'est déjà. */
+    public String rendrePublique(Long wishlistId, String login) {
+        Wishlist wishlist = acces.proprietaire(wishlistId, login);
+        if (wishlist.getJetonPublic() == null) {
+            wishlist.setJetonPublic(nouveauJeton());
+        }
+        return wishlist.getJetonPublic();
+    }
+
+    /** Invalide l'ancien lien au profit d'un nouveau. */
+    public String regenererLien(Long wishlistId, String login) {
+        Wishlist wishlist = acces.proprietaire(wishlistId, login);
+        if (wishlist.getJetonPublic() == null) {
+            throw new RequeteInvalideException("Cette wishlist n'est pas publique");
+        }
+        wishlist.setJetonPublic(nouveauJeton());
+        return wishlist.getJetonPublic();
+    }
+
+    /** Tous les liens déjà diffusés cessent de fonctionner ; les articles pris restent pris. */
+    public void rendrePrivee(Long wishlistId, String login) {
+        acces.proprietaire(wishlistId, login).setJetonPublic(null);
+    }
+
+    // 128 bits aléatoires, encodés sans remplissage pour tenir dans une URL.
+    static String nouveauJeton() {
+        byte[] octets = new byte[16];
+        ALEA.nextBytes(octets);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(octets);
     }
 
     private String nomValide(String nom) {

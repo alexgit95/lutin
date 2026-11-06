@@ -71,10 +71,20 @@ public class SouhaitService {
     @Transactional(readOnly = true)
     public VueWishlistLecteur vueLecteur(Long wishlistId, String login, int page) {
         Wishlist wishlist = acces.lecteur(wishlistId, login);
-        Page<Souhait> lot = lot(wishlistId, page);
-        return new VueWishlistLecteur(wishlist.getId(), wishlist.getNom(), wishlist.getProprietaire().getLogin(),
+        return vueLecteur(wishlist, wishlist.getProprietaire().getLogin(), page);
+    }
+
+    /** Vue du lien public : aucun identifiant du propriétaire. L'appelant a déjà résolu le jeton. */
+    @Transactional(readOnly = true)
+    public VueWishlistLecteur vuePublique(Wishlist wishlist, int page) {
+        return vueLecteur(wishlist, null, page);
+    }
+
+    private VueWishlistLecteur vueLecteur(Wishlist wishlist, String proprietaire, int page) {
+        Page<Souhait> lot = lot(wishlist.getId(), page);
+        return new VueWishlistLecteur(wishlist.getId(), wishlist.getNom(), proprietaire,
                 lot.map(s -> new VueSouhaitLecteur(s.getId(), s.getNom(), initiale(s.getNom()), s.getUrl(),
-                        hote(s.getUrl()), s.getPrix(), s.getPrisParNom())).getContent(),
+                        hote(s.getUrl()), s.getPrix(), s.nomPreneurAffiche())).getContent(),
                 lot.getNumber(), lot.getTotalPages());
     }
 
@@ -120,33 +130,43 @@ public class SouhaitService {
     /** Prise atomique : en cas de concurrence, un seul lecteur l'emporte. */
     public void prendre(Long wishlistId, Long souhaitId, String login) {
         acces.lecteur(wishlistId, login);
-        if (souhaits.prendre(souhaitId, wishlistId, login, horloge.instant()) == 0) {
+        prendreSansControle(wishlistId, souhaitId, login, false);
+    }
+
+    /** Sans contrôle de droits : réservé à {@link WishlistPubliqueService}, qui a déjà identifié le visiteur. */
+    public void prendreSansControle(Long wishlistId, Long souhaitId, String nom, boolean invite) {
+        if (souhaits.prendre(souhaitId, wishlistId, nom, horloge.instant(), invite) == 0) {
             Souhait existant = dansLaWishlist(wishlistId, souhaitId);
             throw new RequeteInvalideException(existant.getPrisParNom() == null
                     ? "Impossible de prendre cet article, réessayez"
-                    : "Cet article est déjà pris par " + existant.getPrisParNom());
+                    : "Cet article est déjà pris par " + existant.nomPreneurAffiche());
         }
     }
 
     /** Sans confirmation, un article pris par quelqu'un d'autre n'est pas libéré. */
     public ResultatLiberation liberer(Long wishlistId, Long souhaitId, String login, boolean confirme) {
         acces.lecteur(wishlistId, login);
+        return libererSansControle(wishlistId, souhaitId, login, confirme);
+    }
+
+    /** Sans contrôle de droits : réservé à {@link WishlistPubliqueService}. {@code login} nul pour un invité. */
+    public ResultatLiberation libererSansControle(Long wishlistId, Long souhaitId, String login, boolean confirme) {
         Souhait souhait = dansLaWishlist(wishlistId, souhaitId);
         String preneur = souhait.getPrisParNom();
         if (preneur == null) {
             return new ResultatLiberation(true, null);
         }
-        if (confirmationRequise(preneur, login) && !confirme) {
-            return new ResultatLiberation(false, preneur);
+        if (confirmationRequise(preneur, souhait.estPrisParInvite(), login) && !confirme) {
+            return new ResultatLiberation(false, souhait.nomPreneurAffiche());
         }
         souhaits.liberer(souhaitId, wishlistId);
         avis.articleLibere(souhaitId);
         return new ResultatLiberation(true, null);
     }
 
-    /** Un lecteur non identifié (login nul) ne peut jamais être reconnu comme le preneur. */
-    public static boolean confirmationRequise(String preneur, String login) {
-        return login == null || !login.equals(preneur);
+    /** Seul un compte connecté dont le login est le preneur, et non un invité, libère sans confirmation. */
+    public static boolean confirmationRequise(String preneur, boolean preneurInvite, String login) {
+        return preneurInvite || login == null || !login.equals(preneur);
     }
 
     private Page<Souhait> lot(Long wishlistId, int page) {

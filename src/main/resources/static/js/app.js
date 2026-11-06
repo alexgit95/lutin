@@ -118,3 +118,74 @@ document.body.addEventListener('htmx:beforeRequest', memoriserChangementStatut);
 document.body.addEventListener('htmx:afterSettle', animerChangementStatut);
 document.body.addEventListener('htmx:responseError', annulerChangementStatut);
 document.body.addEventListener('htmx:sendError', annulerChangementStatut);
+
+// Wishlist publique : popup du nom d'invité, partage et copie du lien.
+const CLE_NOM_INVITE = 'lutin-nom-invite';
+
+function lireNomInvite() {
+    try {
+        return localStorage.getItem(CLE_NOM_INVITE) || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function memoriserNomInvite(nom) {
+    try {
+        localStorage.setItem(CLE_NOM_INVITE, nom);
+    } catch (e) {
+        // Navigation privée : le nom sera simplement redemandé.
+    }
+}
+
+function confirmerSurBouton(bouton, message) {
+    const libelle = bouton.dataset.libelle || bouton.textContent;
+    bouton.dataset.libelle = libelle;
+    bouton.textContent = message;
+    setTimeout(() => { bouton.textContent = libelle; }, 2000);
+}
+
+function copierLien(bouton) {
+    const lien = bouton.dataset.lien;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lien).then(() => confirmerSurBouton(bouton, 'Lien copié'));
+    } else {
+        window.prompt('Copiez ce lien :', lien);
+    }
+}
+
+document.addEventListener('click', (evenement) => {
+    const prendre = evenement.target.closest('[data-prendre-url]');
+    if (prendre) {
+        const dialogue = document.getElementById('dialogue-nom');
+        const formulaire = document.getElementById('formulaire-nom');
+        formulaire.action = prendre.dataset.prendreUrl;
+        formulaire.elements.nom.value = lireNomInvite();
+        dialogue.showModal();
+        formulaire.elements.nom.focus();
+        return;
+    }
+    if (evenement.target.closest('[data-fermer-dialogue]')) {
+        document.getElementById('dialogue-nom').close();
+        return;
+    }
+    const partager = evenement.target.closest('[data-partager]');
+    if (partager) {
+        if (navigator.share) {
+            navigator.share({ title: partager.dataset.titre, url: partager.dataset.lien }).catch(() => {});
+        } else {
+            copierLien(partager);
+        }
+        return;
+    }
+    const copier = evenement.target.closest('[data-copier]');
+    if (copier) {
+        copierLien(copier);
+    }
+});
+
+document.addEventListener('submit', (evenement) => {
+    if (evenement.target.id === 'formulaire-nom') {
+        memoriserNomInvite(evenement.target.elements.nom.value.trim());
+    }
+});

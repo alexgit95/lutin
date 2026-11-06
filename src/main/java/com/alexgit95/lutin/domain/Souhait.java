@@ -47,7 +47,20 @@ public class Souhait {
     @Column(name = "pris_le")
     private Instant prisLe;
 
+    // Facultatif : un boolean non nul échoue à l'ajout sur une table existante ; nul vaut faux.
+    @Column(name = "pris_par_invite")
+    private Boolean prisParInvite;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "wishlist_id", nullable = false)
     private Wishlist wishlist;
+
+    public boolean estPrisParInvite() {
+        return Boolean.TRUE.equals(prisParInvite);
+    }
+
+    /** Nom du preneur tel qu'affiché : un invité porte la mention « (invité) ». */
+    public String nomPreneurAffiche() {
+        return prisParNom == null ? null : prisParNom + (estPrisParInvite() ? " (invité)" : "");
+    }
 }

@@ -79,6 +79,17 @@ Quand le propriétaire agit sur un article **pris**, chaque lecteur avec un comp
 
 Les avis s'affichent sur `/wishlists` et sur la page de la wishlist concernée ; un compteur apparaît dans la barre de navigation. Le bouton « OK » supprime définitivement l'avis, qui expire de toute façon 90 jours après sa création. Libérer un article supprime ses avis « modifié ».
 
+#### Wishlist publique
+Dans l'onglet **Réglages**, le propriétaire peut rendre sa wishlist publique. Un jeton secret aléatoire (128 bits) donne un lien `/p/{jeton}` qui permet à n'importe qui, sans compte, de consulter la wishlist et de prendre un article. Un bouton **Partager** apparaît alors dans l'onglet Articles (partage natif du téléphone, sinon copie du lien).
+
+- **Régénérer le lien** invalide l'ancien ; **Rendre privée** invalide tous les liens. Les articles déjà pris restent « pris par ». Un lien inconnu ou révoqué renvoie 404.
+- **Vue publique** : seulement le titre et les tuiles, sans login du propriétaire ni avis.
+- **Invité (non connecté)** : une popup demande son nom (100 caractères maximum, rempli depuis le navigateur la fois suivante) ; l'article est alors « pris par Nom (invité) ». Le nom est affiché comme du texte.
+- **Compte connecté** : s'il n'est ni propriétaire ni lecteur partagé, il prend l'article sous son login, sans popup. Le propriétaire et les lecteurs partagés sont redirigés vers leur vue habituelle.
+- **Libérer** : tout visiteur le peut. L'avertissement avec confirmation est exigé sauf pour un compte connecté qui libère un article pris sous son propre login (un invité du même nom ne compte pas).
+- **Protection des pages publiques** : `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store`, CSRF actif. Aucune route d'édition n'existe sous `/p/`.
+- **Cloudflare** : l'application ne limite pas le débit. Il est recommandé d'ajouter une règle de limitation de débit sur `/p/*` devant l'application.
+
 ## Profils Spring
 
 | Profil | Usage | Base | Particularités |
@@ -120,7 +131,9 @@ Les tests utilisent SQLite (profil `test`).
 ## Limites connues
 - Le dialecte SQLite n'applique pas les contraintes d'unicité composites (tag nom + liste, partage liste + lecteur, wishlist nom + propriétaire, partage wishlist + lecteur) : elles sont vérifiées par les services et déclarées pour PostgreSQL.
 - Un lecteur retiré d'une wishlist ne peut plus libérer les articles qu'il avait pris, et le propriétaire, aveugle, ne le peut pas non plus : ils restent « pris » tant que le partage n'est pas rétabli.
-- Les wishlists ne sont pas encore publiques : seul un utilisateur connecté peut les consulter.
+- Quand une wishlist est publique, son propriétaire qui ouvre son propre lien sans être connecté voit l'état « pris » et les noms : l'aveuglement ne tient plus tant que le lien existe. Connecté, il est redirigé vers sa vue aveugle.
+- Les invités ne reçoivent pas d'avis lorsque le propriétaire modifie ou supprime un article qu'ils ont pris.
+- L'unicité du jeton public est déclarée par un index unique, que SQLite n'applique pas (comme les autres contraintes d'unicité) ; avec 128 bits aléatoires, les collisions sont négligeables.
 - La protection SSRF ne couvre pas le DNS rebinding.
 - Avec un seul cadeau masqué, un lecteur peut en déduire le prix : les totaux incluent les masqués et bougent quand le propriétaire change leur statut.
 - Pas de mode hors ligne.

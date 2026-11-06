@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.security.Principal;
 
@@ -60,6 +61,8 @@ public class WishlistController {
                            Principal principal, Model model) {
         if (acces.consultation(id, principal.getName()).proprietaire()) {
             model.addAttribute("vue", souhaits.vueProprietaire(id, principal.getName(), page));
+            String jeton = wishlists.jetonPublic(id, principal.getName());
+            model.addAttribute("lienPublic", jeton == null ? null : lien(jeton));
             return "wishlist";
         }
         model.addAttribute("vue", souhaits.vueLecteur(id, principal.getName(), page));
@@ -71,7 +74,35 @@ public class WishlistController {
     public String reglages(@PathVariable Long id, Principal principal, Model model) {
         model.addAttribute("wishlistId", id);
         model.addAttribute("nomWishlist", wishlists.nom(id, principal.getName()));
+        String jeton = wishlists.jetonPublic(id, principal.getName());
+        model.addAttribute("lienPublic", jeton == null ? null : lien(jeton));
         return "wishlist-reglages";
+    }
+
+    @PostMapping("/{id}/public/activer")
+    public String rendrePublique(@PathVariable Long id, Principal principal) {
+        wishlists.rendrePublique(id, principal.getName());
+        return "redirect:/wishlists/" + id + "/reglages";
+    }
+
+    @PostMapping("/{id}/public/regenerer")
+    public String regenererLien(@PathVariable Long id, Principal principal, RedirectAttributes flash) {
+        try {
+            wishlists.regenererLien(id, principal.getName());
+        } catch (RequeteInvalideException e) {
+            flash.addFlashAttribute("erreur", e.getMessage());
+        }
+        return "redirect:/wishlists/" + id + "/reglages";
+    }
+
+    @PostMapping("/{id}/public/desactiver")
+    public String rendrePrivee(@PathVariable Long id, Principal principal) {
+        wishlists.rendrePrivee(id, principal.getName());
+        return "redirect:/wishlists/" + id + "/reglages";
+    }
+
+    private static String lien(String jeton) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path("/p/").path(jeton).toUriString();
     }
 
     @PostMapping("/{id}/renommer")

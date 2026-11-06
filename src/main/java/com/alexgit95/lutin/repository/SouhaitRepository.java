@@ -22,14 +22,14 @@ public interface SouhaitRepository extends JpaRepository<Souhait, Long> {
 
     /** Prise atomique : renvoie 0 si l'article est déjà pris ou n'appartient pas à la wishlist. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update Souhait s set s.prisParNom = :nom, s.prisLe = :le "
+    @Query("update Souhait s set s.prisParNom = :nom, s.prisLe = :le, s.prisParInvite = :invite "
             + "where s.id = :id and s.wishlist.id = :wishlistId and s.prisParNom is null")
     int prendre(@Param("id") Long id, @Param("wishlistId") Long wishlistId,
-                @Param("nom") String nom, @Param("le") Instant le);
+                @Param("nom") String nom, @Param("le") Instant le, @Param("invite") boolean invite);
 
     /** Libération atomique : renvoie 0 si l'article est déjà libre ou n'appartient pas à la wishlist. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update Souhait s set s.prisParNom = null, s.prisLe = null "
+    @Query("update Souhait s set s.prisParNom = null, s.prisLe = null, s.prisParInvite = null "
             + "where s.id = :id and s.wishlist.id = :wishlistId and s.prisParNom is not null")
     int liberer(@Param("id") Long id, @Param("wishlistId") Long wishlistId);
 

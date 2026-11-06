@@ -323,9 +323,10 @@ class WishlistsParcoursTest {
 
     @Test
     void unLecteurNonIdentifieDoitToujoursConfirmer() {
-        assertThat(SouhaitService.confirmationRequise("bob", null)).isTrue();
-        assertThat(SouhaitService.confirmationRequise("bob", "carol")).isTrue();
-        assertThat(SouhaitService.confirmationRequise("bob", "bob")).isFalse();
+        assertThat(SouhaitService.confirmationRequise("bob", false, null)).isTrue();
+        assertThat(SouhaitService.confirmationRequise("bob", false, "carol")).isTrue();
+        assertThat(SouhaitService.confirmationRequise("bob", false, "bob")).isFalse();
+        assertThat(SouhaitService.confirmationRequise("bob", true, "bob")).isTrue();
     }
 
     @Test

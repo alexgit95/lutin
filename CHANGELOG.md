@@ -2,6 +2,22 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.5.0] - 2026-11-06
+
+### Added
+- Wishlist publique : jeton secret (`SecureRandom`, 128 bits) par wishlist, lien `/p/{jeton}` accessible sans connexion (`SecurityConfig`, `WishlistPubliqueController`), interrupteur, copie, régénération et retour en privé dans l'onglet Réglages, bouton Partager (partage natif ou copie) dans l'onglet Articles.
+- Prise par un invité via une popup `<dialog>` (nom obligatoire, nettoyé, 100 caractères, mémorisé dans `localStorage`) ; affichage « nom (invité) » ; un compte connecté prend sous son login sans popup.
+- Colonnes `wishlist.jeton_public` (index unique) et `souhait.pris_par_invite` (facultative, nul = faux), ajout validé sur une copie de la base de dev SQLite existante.
+- Filtre `EnTetesPubliquesFilter` : `Referrer-Policy`, `X-Robots-Tag` et `Cache-Control: no-store` sur `/p/**`.
+- Tests : `WishlistPubliqueTest` (20) et `WishlistPubliqueWebTest` (17).
+
+### Changed
+- La confirmation de libération tient compte de l'indicateur d'invité : un invité homonyme d'un compte ne peut pas être libéré par ce compte sans avertissement.
+- Version du `pom.xml` portée à 0.5.0.
+
+### Fixed
+- Aucun.
+
 ## [0.4.0] - 2026-11-06
 
 ### Changed

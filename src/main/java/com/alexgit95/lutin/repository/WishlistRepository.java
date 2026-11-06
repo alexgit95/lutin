@@ -14,6 +14,9 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     @EntityGraph(attributePaths = "proprietaire")
     Optional<Wishlist> findWithProprietaireById(Long id);
 
+    @EntityGraph(attributePaths = "proprietaire")
+    Optional<Wishlist> findWithProprietaireByJetonPublic(String jetonPublic);
+
     boolean existsByProprietaireIdAndNomCle(Long proprietaireId, String nomCle);
 
     boolean existsByProprietaireIdAndNomCleAndIdNot(Long proprietaireId, String nomCle, Long id);

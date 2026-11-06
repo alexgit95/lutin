@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title>Confirmation - Lutin</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header class="topbar"><span class="brand">Lutin</span></header>
+<main class="page etroit">
+    <section class="avertissement" role="alert">
+        <h1>Attention</h1>
+        <p>Cet article a été pris par <b th:text="${preneur}">bob</b>, pas par vous.</p>
+        <p>Le libérer peut conduire à un doublon : <b th:text="${preneur}">bob</b> pense peut-être l'avoir déjà acheté.</p>
+        <div class="ligne">
+            <form method="post" th:action="@{/p/{j}/souhaits/{s}/libere(j=${jeton},s=${souhaitId})}">
+                <input type="hidden" name="confirme" value="true">
+                <input type="hidden" name="page" th:value="${page}">
+                <button type="submit" class="danger">Libérer quand même</button>
+            </form>
+            <a class="bouton clair" th:href="@{/p/{j}(j=${jeton},page=${page})}">Annuler</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>
