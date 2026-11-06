@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -127,8 +128,9 @@ class ParcoursListesTest {
 
         VueListe lecteur = dashboard.construire(listeId, "bob", null, 0);
 
-        VueCadeau masque = lecteur.cadeaux().stream().filter(c -> c.nom().equals("Secret")).findFirst().orElseThrow();
+        VueCadeau masque = lecteur.cadeaux().stream().filter(VueCadeau::masque).findFirst().orElseThrow();
         assertThat(masque.id()).isNull();
+        assertThat(masque.nom()).isNull();
         assertThat(masque.url()).isNull();
         assertThat(masque.prix()).isNull();
         assertThat(masque.statut()).isNull();
@@ -142,7 +144,8 @@ class ParcoursListesTest {
         assertThat(lecteur.lecteur()).isTrue();
 
             VueCadeau masqueDuLot = dashboard.chargerLot(listeId, "bob", null, 0).cadeaux().stream()
-                .filter(c -> c.nom().equals("Secret")).findFirst().orElseThrow();
+                .filter(VueCadeau::masque).findFirst().orElseThrow();
+            assertThat(masqueDuLot.nom()).isNull();
             assertThat(masqueDuLot.personneId()).isNull();
             assertThat(masqueDuLot.statut()).isNull();
 
@@ -165,6 +168,78 @@ class ParcoursListesTest {
         assertThat(vue.cadeaux()).extracting(VueCadeau::personneId)
             .containsExactlyInAnyOrder(mamanId, homonymeId);
         assertThat(vue.cadeaux()).extracting(VueCadeau::personne).containsOnly("Maman");
+    }
+
+    @Test
+    void lesMasquesDUnLecteurFormentUneSectionUniqueEnFinDeListe() {
+        partagesService.partager(listeId, "alice", "bob");
+        Long papaId = personnesService.creer(listeId, "alice", "Papa", BigDecimal.TEN).getId();
+        ajouter("M1", "10", Statut.A_ACHETER, false, false);
+        ajouter("Zzz", "10", Statut.A_ACHETER, true, false);
+        cadeauxService.creer(listeId, "alice", new CadeauCommande("P1", null, null, papaId, false, false, Set.of()));
+        cadeauxService.creer(listeId, "alice", new CadeauCommande("Aaa", null, null, papaId, true, false, Set.of()));
+
+        VueListe lecteur = dashboard.construire(listeId, "bob", null, 0);
+
+        assertThat(lecteur.cadeaux()).extracting(VueCadeau::masque).containsExactly(false, false, true, true);
+        assertThat(lecteur.groupes()).hasSize(3);
+        assertThat(lecteur.groupes().get(2).personneId()).isNull();
+        assertThat(lecteur.groupes().get(2).cadeaux()).hasSize(2);
+        assertThat(lecteur.cadeaux()).filteredOn(VueCadeau::masque)
+                .allSatisfy(c -> assertThat(c.nom()).isNull());
+
+        VueListe proprietaire = dashboard.construire(listeId, "alice", null, 0);
+        assertThat(proprietaire.groupes()).hasSize(2).allSatisfy(g -> assertThat(g.personneId()).isNotNull());
+        assertThat(proprietaire.cadeaux()).extracting(VueCadeau::nom).containsExactly("M1", "Zzz", "Aaa", "P1");
+    }
+
+    @Test
+    void lOrdreDesMasquesDUnLecteurNeDependNiDesNomsNiDesPersonnes() {
+        Long papaId = personnesService.creer(listeId, "alice", "Papa", BigDecimal.TEN).getId();
+        cadeauxService.creer(listeId, "alice", new CadeauCommande("Zzz", null, null, papaId, true, false, Set.of()));
+        ajouter("Mmm", null, Statut.A_ACHETER, true, false);
+        ajouter("Visible", null, Statut.A_ACHETER, false, false);
+
+        var ordre = cadeaux.findPourLecteur(listeId, PageRequest.of(0, 50)).getContent();
+
+        assertThat(ordre).extracting(c -> c.getNom()).containsExactly("Visible", "Zzz", "Mmm");
+    }
+
+    @Test
+    void lesMasquesRestentApresTousLesVisiblesAvecPlusieursLots() {
+        partagesService.partager(listeId, "alice", "bob");
+        ajouter("Masque 1", null, Statut.A_ACHETER, true, false);
+        ajouter("Masque 2", null, Statut.A_ACHETER, true, false);
+        for (int i = 0; i < DashboardService.TAILLE_PAGE + 1; i++) {
+            ajouter("Visible " + String.format("%02d", i), null, Statut.A_ACHETER, false, false);
+        }
+
+        var lot0 = dashboard.chargerLot(listeId, "bob", null, 0);
+        var lot1 = dashboard.chargerLot(listeId, "bob", null, 1);
+
+        assertThat(lot0.cadeaux()).hasSize(DashboardService.TAILLE_PAGE).noneMatch(VueCadeau::masque);
+        assertThat(lot0.suiteDisponible()).isTrue();
+        assertThat(lot1.cadeaux()).extracting(VueCadeau::masque).containsExactly(false, true, true);
+        assertThat(lot1.groupes()).hasSize(2);
+        assertThat(lot1.groupes().get(1).personneId()).isNull();
+    }
+
+    @Test
+    void unMasqueNeRessortJamaisDUnFiltreParTagPourUnLecteur() {
+        partagesService.partager(listeId, "alice", "bob");
+        Long promo = tagsService.creer(listeId, "alice", "promo").getId();
+        for (String nom : new String[]{"Visible", "Secret"}) {
+            cadeauxService.creer(listeId, "alice", new CadeauCommande(nom, null, null, mamanId,
+                    nom.equals("Secret"), false, Set.of(promo)));
+        }
+
+        VueListe lecteur = dashboard.construire(listeId, "bob", promo, 0);
+        VueListe proprietaire = dashboard.construire(listeId, "alice", promo, 0);
+
+        assertThat(lecteur.cadeaux()).hasSize(1).noneMatch(VueCadeau::masque);
+        assertThat(lecteur.cadeaux().get(0).nom()).isEqualTo("Visible");
+        assertThat(proprietaire.cadeaux()).extracting(VueCadeau::nom).containsExactlyInAnyOrder("Visible", "Secret");
+        assertThat(dashboard.construire(listeId, "bob", null, 0).cadeaux()).hasSize(2);
     }
 
     @Test

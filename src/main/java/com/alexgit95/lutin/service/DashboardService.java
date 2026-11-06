@@ -62,7 +62,7 @@ public class DashboardService {
         AccesListeService.Acces a = acces.lecture(listeId, login);
         boolean lecteur = !a.proprietaire();
 
-        Page<Cadeau> resultat = chargerPage(listeId, tagId, page);
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur);
         List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
 
         // Les totaux incluent les cadeaux masqués ; la répartition par statut les exclut pour un lecteur.
@@ -87,7 +87,7 @@ public class DashboardService {
     public LotCadeaux chargerLot(Long listeId, String login, Long tagId, int page) {
         AccesListeService.Acces a = acces.lecture(listeId, login);
         boolean lecteur = !a.proprietaire();
-        Page<Cadeau> resultat = chargerPage(listeId, tagId, page);
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur);
         List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
         return new LotCadeaux(listeId, tagId, lecteur, vues, grouper(vues),
                 resultat.getNumber(), resultat.hasNext());
@@ -118,11 +118,18 @@ public class DashboardService {
         return List.copyOf(groupes);
     }
 
-    private Page<Cadeau> chargerPage(Long listeId, Long tagId, int page) {
-        PageRequest demande = PageRequest.of(Math.max(page, 0), TAILLE_PAGE,
-                Sort.by("personne.nom", "personne.id", "nom", "id"));
-        return tagId == null
-                ? cadeaux.findByListeId(listeId, demande)
+    private Page<Cadeau> chargerPage(Long listeId, Long tagId, int page, boolean lecteur) {
+        int numero = Math.max(page, 0);
+        Sort tri = Sort.by("personne.nom", "personne.id", "nom", "id");
+        if (lecteur && tagId == null) {
+            return cadeaux.findPourLecteur(listeId, PageRequest.of(numero, TAILLE_PAGE));
+        }
+        PageRequest demande = PageRequest.of(numero, TAILLE_PAGE, tri);
+        if (tagId == null) {
+            return cadeaux.findByListeId(listeId, demande);
+        }
+        return lecteur
+                ? cadeaux.findByListeIdAndTagsIdAndMasqueFalse(listeId, tagId, demande)
                 : cadeaux.findByListeIdAndTagsId(listeId, tagId, demande);
     }
 

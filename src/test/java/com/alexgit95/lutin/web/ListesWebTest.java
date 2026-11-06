@@ -89,11 +89,25 @@ class ListesWebTest {
 
     @Test
     void lePageAccueilListeLesListesEtLesPartages() throws Exception {
-        mvc.perform(get("/").with(user("alice"))).andExpect(status().isOk())
+        mvc.perform(get("/listes").with(user("alice"))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Noel")));
-        mvc.perform(get("/").with(user("bob"))).andExpect(status().isOk())
+        mvc.perform(get("/listes").with(user("bob"))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Noel")))
                 .andExpect(content().string(containsString("alice")));
+    }
+
+    @Test
+    void laLandingProposeDeuxGrandesTuilesVersLesListesEtLesWishlists() throws Exception {
+        mvc.perform(get("/").with(user("alice"))).andExpect(status().isOk())
+                .andExpect(view().name("accueil"))
+                .andExpect(content().string(containsString("href=\"/listes\"")))
+                .andExpect(content().string(containsString("href=\"/wishlists\"")))
+                .andExpect(content().string(containsString("Mes listes d'achat")))
+                .andExpect(content().string(containsString("Mes wishlists")))
+                .andExpect(content().string(containsString("1 liste")))
+                .andExpect(content().string(not(containsString("partagée"))));
+        mvc.perform(get("/").with(user("bob"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("1 partagée(s) avec moi")));
     }
 
     @Test
@@ -140,7 +154,8 @@ class ListesWebTest {
         mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("bob")).param("page", "0"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Cadeaux masqués")))
-                .andExpect(content().string(containsString("Cadeau secret")))
+                .andExpect(content().string(containsString("Cadeau masqué")))
+                .andExpect(content().string(not(containsString("Cadeau secret"))))
                 .andExpect(content().string(not(containsString("secret.example"))))
                 .andExpect(content().string(not(containsString("12,34"))));
         mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("carol")).param("page", "0"))
@@ -185,10 +200,35 @@ class ListesWebTest {
     }
 
     @Test
+    void leMasqueDuLecteurEstEnFinDePageEtIgnoreLesTags() throws Exception {
+        Long promo = tagsService.creer(listeId, "alice", "promo").getId();
+        Long secretId = cadeaux.findAll().stream().filter(Cadeau::isMasque).findFirst().orElseThrow().getId();
+        cadeauxService.modifier(listeId, secretId, "alice", new CadeauCommande("Cadeau secret",
+                "https://secret.example/x", new BigDecimal("12.34"), mamanId, true, false, Set.of(promo)));
+        cadeauxService.modifier(listeId, visibleId, "alice", new CadeauCommande("Cadeau visible",
+                "https://visible.example/y", new BigDecimal("20"), mamanId, false, false, Set.of(promo)));
+
+        String page = mvc.perform(get("/listes/" + listeId).with(user("bob"))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(page.indexOf("Cadeau visible")).isPositive().isLessThan(page.indexOf("Cadeaux masqués"));
+        assertThat(page).doesNotContain("promo\"").doesNotContain("Cadeau secret");
+
+        mvc.perform(get("/listes/" + listeId).with(user("bob")).param("tag", promo.toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Cadeau visible")))
+                .andExpect(content().string(not(containsString("Cadeau masqué"))));
+        mvc.perform(get("/listes/" + listeId).with(user("alice")).param("tag", promo.toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Cadeau secret")))
+                .andExpect(content().string(containsString("Cadeau visible")));
+    }
+
+    @Test
     void unLecteurNeRecoitAucuneDonneeMasquee() throws Exception {
         mvc.perform(get("/listes/" + listeId).with(user("bob"))).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Lecture seule")))
-                .andExpect(content().string(containsString("Cadeau secret")))
+                .andExpect(content().string(containsString("Cadeau masqué")))
+                .andExpect(content().string(not(containsString("Cadeau secret"))))
                 .andExpect(content().string(containsString("Cadeau visible")))
                 .andExpect(content().string(not(containsString("secret.example"))))
                 .andExpect(content().string(not(containsString("12,34"))))
@@ -337,7 +377,7 @@ class ListesWebTest {
         assertThat(listes.findById(listeId).orElseThrow().getNom()).isEqualTo("Nouveau");
 
         mvc.perform(post("/listes/" + listeId + "/supprimer").with(user("alice")).with(csrf()))
-                .andExpect(redirectedUrl("/"));
+                .andExpect(redirectedUrl("/listes"));
         assertThat(listes.count()).isZero();
     }
 }

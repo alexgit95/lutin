@@ -34,7 +34,7 @@ public class ListeController {
             return "redirect:/listes/" + liste.getId();
         } catch (RequeteInvalideException e) {
             flash.addFlashAttribute("erreur", e.getMessage());
-            return "redirect:/";
+            return "redirect:/listes";
         }
     }
 
@@ -79,6 +79,6 @@ public class ListeController {
     @PostMapping("/listes/{id}/supprimer")
     public String supprimer(@PathVariable Long id, Principal principal) {
         listes.supprimer(id, principal.getName());
-        return "redirect:/";
+        return "redirect:/listes";
     }
 }

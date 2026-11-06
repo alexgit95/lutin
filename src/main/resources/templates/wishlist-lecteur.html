@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Wishlist')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <div class="entete-wishlist">
+        <h1><span th:text="${vue.nom()}">Wishlist</span>
+            <small>de <span th:text="${vue.proprietaire()}">alice</span></small></h1>
+    </div>
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <section class="panneau avis-liste" th:unless="${#lists.isEmpty(avis)}">
+        <h2>Avis</h2>
+        <ul class="avis">
+            <li th:each="a : ${avis}">
+                <span th:text="${a.message()}">Message</span>
+                <form th:action="@{/avis/{id}/fermer(id=${a.id()},retour=${vue.id()})}" method="post" class="inline">
+                    <button type="submit" class="clair">OK</button>
+                </form>
+            </li>
+        </ul>
+    </section>
+
+    <p class="vide" th:if="${#lists.isEmpty(vue.souhaits())}">Aucun article pour le moment.</p>
+    <ul class="tuiles">
+        <li class="tuile" th:each="s : ${vue.souhaits()}" th:classappend="${s.prisPar() != null} ? 'pris'">
+            <span class="ruban-pris" th:if="${s.prisPar() != null}">&#10003; Pris par <b th:text="${s.prisPar()}">bob</b></span>
+            <div class="tuile-visuel" th:classappend="'teinte-' + ${s.id() % 6}" th:text="${s.initiale()}" aria-hidden="true">A</div>
+            <div class="tuile-corps">
+                <h3 class="tuile-titre" th:text="${s.nom()}">Article</h3>
+                <span class="tuile-hote" th:if="${s.hote() != null}" th:text="${s.hote()}">exemple.fr</span>
+                <div class="tuile-prix" th:if="${s.prix() != null}"><span th:replace="~{fragments :: montant(${s.prix()})}"></span></div>
+            </div>
+            <div class="tuile-pied">
+                <a class="bouton clair" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer">Voir</a>
+                <form th:if="${s.prisPar() == null}" method="post"
+                      th:action="@{/wishlists/{id}/souhaits/{sid}/pris(id=${vue.id()},sid=${s.id()})}">
+                    <input type="hidden" name="page" th:value="${vue.page()}">
+                    <button type="submit">Je le prends</button>
+                </form>
+                <form th:if="${s.prisPar() != null}" method="post"
+                      th:action="@{/wishlists/{id}/souhaits/{sid}/libere(id=${vue.id()},sid=${s.id()})}">
+                    <input type="hidden" name="page" th:value="${vue.page()}">
+                    <button type="submit" class="lien">Libérer</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <div class="pagination" th:if="${vue.totalPages() > 1}">
+        <a th:if="${vue.page() > 0}" th:href="@{/wishlists/{id}(id=${vue.id()},page=${vue.page() - 1})}">&laquo; Précédent</a>
+        <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 2</span>
+        <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/wishlists/{id}(id=${vue.id()},page=${vue.page() + 1})}">Suivant &raquo;</a>
+    </div>
+</main>
+</body>
+</html>

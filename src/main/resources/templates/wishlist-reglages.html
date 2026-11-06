@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Réglages')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <nav th:replace="~{fragments :: ongletsWishlist(${wishlistId}, 'reglages')}"></nav>
+    <div th:replace="~{fragments :: messages}"></div>
+    <section class="panneau">
+        <h1>Réglages de la wishlist</h1>
+        <form th:action="@{/wishlists/{id}/renommer(id=${wishlistId})}" method="post" class="ligne">
+            <input type="text" name="nom" th:value="${nomWishlist}" maxlength="100" required>
+            <button type="submit" class="clair">Renommer</button>
+        </form>
+        <form th:action="@{/wishlists/{id}/supprimer(id=${wishlistId})}" method="post"
+              onsubmit="return confirm('Supprimer cette wishlist et tous ses articles ?')">
+            <button type="submit" class="danger">Supprimer la wishlist</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

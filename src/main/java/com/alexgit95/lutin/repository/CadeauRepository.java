@@ -19,6 +19,19 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
     @EntityGraph(attributePaths = "personne")
     Page<Cadeau> findByListeIdAndTagsId(Long listeId, Long tagId, Pageable pageable);
 
+    // Un masqué n'a jamais de tag pour un lecteur : il ne ressort pas d'un filtre.
+    @EntityGraph(attributePaths = "personne")
+    Page<Cadeau> findByListeIdAndTagsIdAndMasqueFalse(Long listeId, Long tagId, Pageable pageable);
+
+    // Visibles d'abord, puis masqués : les clés de tri d'un masqué sont constantes, seul l'identifiant ordonne.
+    @EntityGraph(attributePaths = "personne")
+    @Query(value = "select c from Cadeau c where c.liste.id = :listeId order by c.masque, "
+            + "case when c.masque = true then '' else c.personne.nom end, "
+            + "case when c.masque = true then 0L else c.personne.id end, "
+            + "case when c.masque = true then '' else c.nom end, c.id",
+            countQuery = "select count(c) from Cadeau c where c.liste.id = :listeId")
+    Page<Cadeau> findPourLecteur(@Param("listeId") Long listeId, Pageable pageable);
+
     long countByPersonneId(Long personneId);
 
     void deleteByListeId(Long listeId);

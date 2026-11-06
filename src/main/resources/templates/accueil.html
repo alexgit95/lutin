@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Accueil')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <h1 class="titre-accueil">Bonjour <span th:text="${utilisateurCourant}">alice</span></h1>
+    <div class="grandes-tuiles">
+        <a class="grande-tuile teinte-0" th:href="@{/listes}">
+            <span class="grande-icone" aria-hidden="true">&#128722;</span>
+            <span class="grande-titre">Mes listes d'achat</span>
+            <span class="grande-detail">
+                <span th:text="${nombreListes} + (${nombreListes > 1} ? ' listes' : ' liste')">2 listes</span>
+                <span th:if="${nombreListesPartagees > 0}" th:text="' · ' + ${nombreListesPartagees} + ' partagée(s) avec moi'"></span>
+            </span>
+        </a>
+        <a class="grande-tuile teinte-1" th:href="@{/wishlists}">
+            <span class="grande-icone" aria-hidden="true">&#127873;</span>
+            <span class="grande-titre">Mes wishlists</span>
+            <span class="grande-detail">
+                <span th:text="${nombreWishlists} + (${nombreWishlists > 1} ? ' wishlists' : ' wishlist')">1 wishlist</span>
+                <span th:if="${nombreWishlistsPartagees > 0}" th:text="' · ' + ${nombreWishlistsPartagees} + ' partagée(s) avec moi'"></span>
+            </span>
+            <span class="grande-avis" th:if="${nombreAvis > 0}" th:text="${nombreAvis} + ' avis'">1 avis</span>
+        </a>
+    </div>
+</main>
+</body>
+</html>

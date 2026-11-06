@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Wishlists')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <section class="panneau avis-liste" th:unless="${avis.isEmpty()}">
+        <h2>Avis</h2>
+        <ul class="avis">
+            <li th:each="a : ${avis.content}">
+                <span th:text="${a.message()}">Message</span>
+                <a th:if="${a.wishlistId() != null}" th:href="@{/wishlists/{id}(id=${a.wishlistId()})}">Voir</a>
+                <form th:action="@{/avis/{id}/fermer(id=${a.id()})}" method="post" class="inline">
+                    <button type="submit" class="clair">OK</button>
+                </form>
+            </li>
+        </ul>
+        <div class="pagination" th:if="${avis.totalPages > 1}">
+            <a th:if="${avis.hasPrevious()}" th:href="@{/wishlists(pageAvis=${avis.number - 1})}">&laquo; Avis précédents</a>
+            <a th:if="${avis.hasNext()}" th:href="@{/wishlists(pageAvis=${avis.number + 1})}">Avis suivants &raquo;</a>
+        </div>
+    </section>
+
+    <h1>Mes wishlists</h1>
+    <form th:action="@{/wishlists}" method="post" class="ligne">
+        <input type="text" name="nom" placeholder="Nouvelle wishlist (ex. Anniversaire)" maxlength="100" required>
+        <button type="submit">Créer</button>
+    </form>
+    <p class="vide" th:if="${#lists.isEmpty(mesWishlists)}">Aucune wishlist pour le moment.</p>
+    <ul class="cartes">
+        <li th:each="w : ${mesWishlists}">
+            <a th:href="@{/wishlists/{id}(id=${w.id()})}" th:text="${w.nom()}">Wishlist</a>
+        </li>
+    </ul>
+
+    <h2 th:unless="${#lists.isEmpty(wishlistsPartagees)}">Partagées avec moi</h2>
+    <ul class="cartes">
+        <li th:each="w : ${wishlistsPartagees}">
+            <a th:href="@{/wishlists/{id}(id=${w.id()})}"><span th:text="${w.nom()}">Wishlist</span>
+                <small>de <span th:text="${w.proprietaire()}">alice</span></small></a>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

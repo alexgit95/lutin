@@ -29,7 +29,7 @@
     <tr th:id="${cadeau.id() == null ? null : 'cadeau-' + cadeau.id()}" class="cadeau-ligne"
         th:classappend="${cadeau.masque()} ? ' masque'" th:attr="data-statut=${cadeau.statut()}">
         <td th:if="${lot.lecteur() and cadeau.masque()}" colspan="5">
-            <span class="cadeau-nom" th:text="${cadeau.nom()}">Cadeau</span> <em class="cache">(masqué)</em>
+            <span class="cadeau-nom cache">Cadeau masqué</span>
         </td>
         <th:block th:unless="${lot.lecteur() and cadeau.masque()}">
             <td>

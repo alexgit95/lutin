@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Article')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <h1 th:text="${souhaitId == null} ? 'Nouvel article' : 'Modifier l\'article'">Article</h1>
+    <div th:replace="~{fragments :: messages}"></div>
+    <form th:object="${form}" method="post"
+          th:action="${souhaitId == null} ? @{/wishlists/{id}/souhaits(id=${wishlistId})} : @{/wishlists/{id}/souhaits/{sid}(id=${wishlistId},sid=${souhaitId})}">
+        <label>Nom <small>(facultatif si une URL est indiquée : le titre de la page sera utilisé)</small>
+            <input type="text" th:field="*{nom}" maxlength="255">
+        </label>
+        <label>URL
+            <input type="url" th:field="*{url}" maxlength="2048" placeholder="https://...">
+        </label>
+        <label>Prix (€)
+            <input type="number" th:field="*{prix}" min="0" step="0.01">
+        </label>
+        <div class="ligne">
+            <button type="submit">Enregistrer</button>
+            <a class="bouton clair" th:href="@{/wishlists/{id}(id=${wishlistId})}">Annuler</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

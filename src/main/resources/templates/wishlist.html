@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Wishlist')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+    <div class="entete-wishlist">
+        <h1 th:text="${vue.nom()}">Wishlist</h1>
+        <a class="bouton" th:href="@{/wishlists/{id}/souhaits/nouveau(id=${vue.id()})}">+ Ajouter un article</a>
+    </div>
+    <nav th:replace="~{fragments :: ongletsWishlist(${vue.id()}, 'articles')}"></nav>
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <ul class="tuiles">
+        <li class="tuile" th:each="s : ${vue.souhaits()}">
+            <div class="tuile-visuel" th:classappend="'teinte-' + ${s.id() % 6}" th:text="${s.initiale()}" aria-hidden="true">A</div>
+            <div class="tuile-corps">
+                <h3 class="tuile-titre" th:text="${s.nom()}">Article</h3>
+                <span class="tuile-hote" th:if="${s.hote() != null}" th:text="${s.hote()}">exemple.fr</span>
+                <div class="tuile-prix" th:if="${s.prix() != null}"><span th:replace="~{fragments :: montant(${s.prix()})}"></span></div>
+            </div>
+            <div class="tuile-pied">
+                <a class="bouton clair" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer">Voir</a>
+                <a class="bouton clair" th:href="@{/wishlists/{id}/souhaits/{sid}/modifier(id=${vue.id()},sid=${s.id()})}">Modifier</a>
+                <form th:action="@{/wishlists/{id}/souhaits/{sid}/supprimer(id=${vue.id()},sid=${s.id()})}" method="post"
+                      onsubmit="return confirm('Supprimer cet article ?')">
+                    <button type="submit" class="lien danger">Supprimer</button>
+                </form>
+            </div>
+        </li>
+        <li class="ajout-wrap">
+            <a class="tuile ajout" th:href="@{/wishlists/{id}/souhaits/nouveau(id=${vue.id()})}">
+                <span class="plus" aria-hidden="true">+</span>
+                <span>Ajouter un article</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="pagination" th:if="${vue.totalPages() > 1}">
+        <a th:if="${vue.page() > 0}" th:href="@{/wishlists/{id}(id=${vue.id()},page=${vue.page() - 1})}">&laquo; Précédent</a>
+        <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 2</span>
+        <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/wishlists/{id}(id=${vue.id()},page=${vue.page() + 1})}">Suivant &raquo;</a>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Confirmation')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit">
+    <section class="avertissement" role="alert">
+        <h1>Attention</h1>
+        <p>Cet article a été pris par <b th:text="${preneur}">bob</b>, pas par vous.</p>
+        <p>Le libérer peut conduire à un doublon : <b th:text="${preneur}">bob</b> pense peut-être l'avoir déjà acheté.</p>
+        <div class="ligne">
+            <form method="post" th:action="@{/wishlists/{id}/souhaits/{sid}/libere(id=${wishlistId},sid=${souhaitId})}">
+                <input type="hidden" name="confirme" value="true">
+                <input type="hidden" name="page" th:value="${page}">
+                <button type="submit" class="danger">Libérer quand même</button>
+            </form>
+            <a class="bouton clair" th:href="@{/wishlists/{id}(id=${wishlistId},page=${page})}">Annuler</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

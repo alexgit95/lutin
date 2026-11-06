@@ -15,7 +15,8 @@
 <header class="topbar" th:fragment="barre">
     <a class="brand" th:href="@{/}">Lutin</a>
     <nav>
-        <a th:href="@{/}">Mes listes</a>
+        <a th:href="@{/listes}">Mes listes</a>
+        <a th:href="@{/wishlists}">Wishlists<span class="badge" th:if="${nombreAvis != null and nombreAvis > 0}" th:text="${nombreAvis}">2</span></a>
         <a th:if="${estAdmin}" th:href="@{/admin}">Admin</a>
         <form th:action="@{/logout}" method="post" class="inline">
             <button type="submit" class="lien" th:text="'Déconnexion (' + ${utilisateurCourant} + ')'">Déconnexion</button>
@@ -27,6 +28,11 @@
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/personnes(id=${listeId})}" th:classappend="${actif == 'personnes'} ? 'actif'">Personnes</a>
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/partages(id=${listeId})}" th:classappend="${actif == 'partages'} ? 'actif'">Partage</a>
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/reglages(id=${listeId})}" th:classappend="${actif == 'reglages'} ? 'actif'">Réglages</a>
+</nav>
+<nav class="onglets" th:fragment="ongletsWishlist(wishlistId, actif)">
+    <a th:href="@{/wishlists/{id}(id=${wishlistId})}" th:classappend="${actif == 'articles'} ? 'actif'">Articles</a>
+    <a th:href="@{/wishlists/{id}/partages(id=${wishlistId})}" th:classappend="${actif == 'partages'} ? 'actif'">Partage</a>
+    <a th:href="@{/wishlists/{id}/reglages(id=${wishlistId})}" th:classappend="${actif == 'reglages'} ? 'actif'">Réglages</a>
 </nav>
 <div th:fragment="messages">
     <p class="erreur bandeau" th:if="${erreur}" th:text="${erreur}"></p>

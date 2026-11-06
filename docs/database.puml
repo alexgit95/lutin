@@ -59,6 +59,49 @@ entity "partage" as partage {
   <<unique (liste_id, lecteur_id)>>
 }
 
+entity "wishlist" as wishlist {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar(100)
+  * nom_cle : varchar(100) <<nom nettoyé en minuscules>>
+  * proprietaire_id : bigint <<FK>>
+  <<unique (proprietaire_id, nom_cle)>>
+}
+
+entity "souhait" as souhait {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar
+  url : varchar(2048)
+  prix : numeric(12,2)
+  pris_par_nom : varchar(100) <<texte, sans FK : login ou nom d'invité>>
+  pris_le : timestamp
+  * wishlist_id : bigint <<FK>>
+}
+
+entity "wishlist_partage" as wishlist_partage {
+  * id : bigint <<PK>>
+  --
+  * wishlist_id : bigint <<FK>>
+  * lecteur_id : bigint <<FK>>
+  <<unique (wishlist_id, lecteur_id)>>
+}
+
+entity "avis" as avis {
+  * id : bigint <<PK>>
+  --
+  * destinataire_id : bigint <<FK>>
+  * type : varchar(30) <<MODIFIE, SUPPRIME, WISHLIST_SUPPRIMEE>>
+  souhait_id : bigint <<sans FK>>
+  wishlist_id : bigint <<sans FK>>
+  * wishlist_nom : varchar(100)
+  article_nom : varchar
+  pris_par_nom : varchar(100)
+  nombre : integer
+  * cree_le : timestamp <<expire après 90 jours>>
+  <<index (destinataire_id)>>
+}
+
 utilisateur ||--o{ liste_achat : possède
 liste_achat ||--o{ personne
 liste_achat ||--o{ cadeau
@@ -68,4 +111,9 @@ utilisateur ||--o{ partage : lecteur
 personne ||--o{ cadeau : destinataire
 cadeau ||--o{ cadeau_tag
 tag ||--o{ cadeau_tag
+utilisateur ||--o{ wishlist : possède
+wishlist ||--o{ souhait
+wishlist ||--o{ wishlist_partage
+utilisateur ||--o{ wishlist_partage : lecteur
+utilisateur ||--o{ avis : destinataire
 @enduml
