@@ -19,6 +19,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 - **BREAKING** : aucun compte existant n'est repris ; recréer la base de prod (volume PostgreSQL) et `lutin-dev.db`.
 - Version du `pom.xml` portée à 0.9.0.
 
+### Variables d'environnement
+- **À définir en prod (obligatoires, démarrage refusé sinon)** :
+  - `CF_ACCESS_TEAM_DOMAIN` : domaine du team Cloudflare Access, par exemple `monteam.cloudflareaccess.com` (sans `https://`).
+  - `CF_ACCESS_AUD` : audience (AUD tag) de l'application Access.
+  - `EMAIL_HMAC_SECRET` : secret de hachage des emails, 32 caractères minimum, à sauvegarder (le changer ou le perdre empêche de reconnaître les comptes).
+- **N'est plus obligatoire en prod** : `INVITATION_KEY` (sans effet en prod ; reste facultative en dev, défaut `lutin-dev`). `docker-compose.yml` ne l'exige plus.
+- **Inchangées** : `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `APP_PORT`.
+- Aucune variable nouvelle en dev local.
+- À définir sur le serveur qui exécute le conteneur avant la mise en production (la GitHub Action ne fait que publier l'image) ; `docker-compose.yml` les transmet au conteneur.
+
 ### Fixed
 - Aucun.
 
