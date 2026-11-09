@@ -40,11 +40,13 @@ public class ListeController {
 
     @GetMapping("/listes/{id}")
     public String afficher(@PathVariable Long id, @RequestParam(required = false) Long tag,
-                           @RequestParam(defaultValue = "0") int page, Principal principal, Model model) {
-        VueListe vue = dashboard.construire(id, principal.getName(), tag, page);
+                           @RequestParam(defaultValue = "0") int page,
+                           @RequestParam(defaultValue = "false") boolean aRembourser,
+                           Principal principal, Model model) {
+        VueListe vue = dashboard.construire(id, principal.getName(), tag, page, aRembourser);
         model.addAttribute("vue", vue);
         model.addAttribute("lot", new DashboardService.LotCadeaux(vue.id(), vue.tagActif(), vue.lecteur(),
-            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages()));
+            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages(), vue.filtreARembourser()));
         model.addAttribute("statuts", Statut.values());
         return "liste";
     }
@@ -52,8 +54,9 @@ public class ListeController {
     @GetMapping("/listes/{id}/cadeaux")
     public String chargerCadeaux(@PathVariable Long id, @RequestParam(required = false) Long tag,
                                  @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "false") boolean aRembourser,
                                  Principal principal, Model model) {
-        model.addAttribute("lot", dashboard.chargerLot(id, principal.getName(), tag, page));
+        model.addAttribute("lot", dashboard.chargerLot(id, principal.getName(), tag, page, aRembourser));
         model.addAttribute("statuts", Statut.values());
         return "liste-fragments :: cadeauxLot";
     }

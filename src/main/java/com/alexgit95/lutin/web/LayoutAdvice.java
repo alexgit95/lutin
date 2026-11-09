@@ -31,7 +31,8 @@ public class LayoutAdvice {
     @ModelAttribute("nombreAvis")
     public long nombreAvis(Authentication authentication, HttpServletRequest requete) {
         boolean connecte = authentication != null && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken);
+                && !(authentication instanceof AnonymousAuthenticationToken)
+                && !authentication.getName().isEmpty();
         if (!connecte || !"GET".equals(requete.getMethod()) || requete.getHeader("HX-Request") != null) {
             return 0;
         }

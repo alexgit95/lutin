@@ -7,8 +7,9 @@ Stack : Java 25, Spring Boot 4, Spring Security (session cookie + CSRF), Spring 
 ## Fonctionnalités
 
 ### Compte
-- **Inscription** avec un login, un mot de passe (8 à 72 caractères) et la **clé d'invitation** (variable `INVITATION_KEY`).
-- Le **premier inscrit est administrateur**. L'écran `/admin` affiche la clé d'invitation, réservé à l'administrateur.
+- **En prod**, l'authentification est assurée par **Cloudflare Access** : pas de formulaire de connexion, pas d'inscription ni de clé d'invitation. À la **première connexion**, l'utilisateur choisit un **pseudo** (4 à 50 caractères : lettres, chiffres, point, tiret et underscore ; unique sans tenir compte de la casse ; immuable ; `admin`, `administrateur`, `root`, `lutin`, `system` et `support` sont réservés). C'est le seul nom visible dans l'application : l'adresse email n'est jamais affichée ni journalisée, et n'est conservée que sous forme de HMAC-SHA256.
+- **En dev local**, rien ne change : inscription avec un login, un mot de passe (8 à 72 caractères) et la **clé d'invitation** (`INVITATION_KEY`, `lutin-dev` par défaut).
+- Le **premier compte créé est administrateur** (en prod : le premier à avoir choisi son pseudo). L'écran `/admin` est réservé à l'administrateur ; il affiche la clé d'invitation en dev et un message neutre en prod (aucune fonction d'administration pour l'instant).
 
 ### Listes d'achat
 La landing page (`/`) propose deux grandes tuiles : **Mes listes d'achat** (`/listes`) et **Mes wishlists** (`/wishlists`, avec le nombre d'avis en attente). Les listes se gèrent depuis `/listes`.
@@ -57,6 +58,17 @@ Les cadeaux masqués restent comptés dans les totaux. Pour un lecteur, la répa
 - Les cadeaux sont regroupés par personne destinataire. Deux personnes portant le même nom restent dans des groupes distincts. Pour un lecteur, tous les cadeaux masqués forment un seul groupe « Cadeaux masqués » placé après les autres, dans l'ordre de création : leur place ne révèle ni leur nom ni leur destinataire.
 - Pas de pagination visible : les cadeaux se chargent par lots de 50 au fil du défilement. Un groupe qui s'étend sur deux lots continue sans répéter son en-tête. Si un chargement échoue, un bouton « Réessayer » apparaît et les cadeaux déjà affichés sont conservés.
 - Le filtre par tag s'applique à la liste, pas aux compteurs.
+
+### Remboursement des cadeaux (propriétaire seulement)
+Les achats passent par le compte courant, puis un virement de remboursement part du compte d'épargne. L'application suit ce virement sans toucher au Déboursé ni au Reste à payer.
+
+- **Cadeaux remboursables** : statut Commandé ou plus, prix renseigné, pas « pour un tiers ». Chacun porte une pastille « € à rembourser » ; un clic la passe à « remboursé le jj/MM » (date du jour), un second clic annule.
+- **Carte « À rembourser »** : montant restant à virer, montant déjà remboursé, et le bouton « Tout marquer remboursé » avec la date du virement préremplie (aujourd'hui, jamais dans le futur). Le bouton est inactif s'il n'y a rien à virer, et le compte rendu indique le nombre de cadeaux et la somme.
+- **Filtre « À rembourser »** : n'affiche que les cadeaux remboursables non remboursés, avec ou sans filtre par tag, y compris dans le chargement continu.
+- **Prix verrouillé** : le prix d'un cadeau remboursé n'est plus modifiable (champ en lecture seule) ; décochez d'abord le remboursement.
+- **Alertes « virement en trop »** : si un cadeau remboursé retourne à « À acheter », est supprimé, passe « pour un tiers » ou voit sa personne supprimée, la date est effacée et une alerte garde le montant déjà viré. Elle reste affichée jusqu'à sa fermeture par le propriétaire (les 20 plus récentes, avec le total).
+- Un lecteur ne reçoit aucune de ces informations ; les actions sont refusées (403) à tout autre que le propriétaire.
+- **Fuseau horaire** : la « date du jour » suit `lutin.fuseau-horaire` (défaut `Europe/Paris`).
 
 ### Barre de workflow
 Une barre fixée en bas de l'écran affiche le nombre de cadeaux par statut (À acheter, Commandé, Livré, Emballé, Remis). Ces nombres portent sur toute la liste : ils ne dépendent ni du filtre par tag ni des lots chargés. Pour un lecteur, ils excluent les cadeaux masqués.
@@ -109,17 +121,31 @@ Dans l'onglet **Réglages**, le propriétaire peut rendre sa wishlist publique. 
 
 | Profil | Usage | Base | Particularités |
 |---|---|---|---|
-| `dev` (défaut) | Développement local | SQLite (`lutin-dev.db`) | HTTP, clé d'invitation `lutin-dev` si `INVITATION_KEY` absent |
-| `prod` | Docker | PostgreSQL | HTTPS terminé par Cloudflare (`X-Forwarded-*`), cookies de session `Secure` |
+| `dev` (défaut) | Développement local | SQLite (`lutin-dev.db`) | HTTP, connexion par formulaire, clé d'invitation `lutin-dev` si `INVITATION_KEY` absent |
+| `prod` | Docker | PostgreSQL | HTTPS terminé par Cloudflare (`X-Forwarded-*`), cookies de session `Secure`, authentification par Cloudflare Access (`lutin.acces.mode=cloudflare`) |
 
 ### Variables d'environnement
 
 | Variable | Profil | Rôle |
 |---|---|---|
-| `INVITATION_KEY` | `prod` (obligatoire), `dev` (facultative) | Clé exigée à l'inscription |
+| `CF_ACCESS_TEAM_DOMAIN` | `prod` (obligatoire) | Domaine du team Cloudflare Access, par exemple `monteam.cloudflareaccess.com` (sans `https://`) |
+| `CF_ACCESS_AUD` | `prod` (obligatoire) | Audience (AUD tag) de l'application Access |
+| `EMAIL_HMAC_SECRET` | `prod` (obligatoire) | Secret de hachage des emails, 32 caractères minimum |
+| `INVITATION_KEY` | `dev` (facultative) | Clé exigée à l'inscription en dev ; sans effet en prod |
 | `DB_URL` | `prod` | URL JDBC PostgreSQL |
 | `DB_USERNAME` | `prod` | Utilisateur de la base |
 | `DB_PASSWORD` | `prod` | Mot de passe de la base |
+
+### Authentification par Cloudflare Access (prod)
+Chaque requête est authentifiée par le jeton de l'en-tête `Cf-Access-Jwt-Assertion` (signature par les clés du team, émetteur, audience et expiration), sans rien garder en session : retirer une adresse dans Cloudflare coupe l'accès à la requête suivante. Sans jeton valide, la réponse est 401.
+
+- **Configuration Cloudflare** : créer une application Access sur le domaine de l'application avec une politique listant les adresses autorisées, puis une politique **Bypass** pour `/p/*` (liens publics), `/manifest.webmanifest`, `/sw.js`, `/icons/*`, `/css/*` et `/js/*`. Relever le domaine du team et l'AUD.
+- **Premier accès** : se connecter en premier pour devenir administrateur, après avoir restreint la politique aux adresses voulues.
+- **Secret HMAC** : à sauvegarder comme le mot de passe de la base. Le changer ou le perdre empêche de reconnaître les comptes. L'adresse email est supposée immuable ; il n'existe ni changement d'adresse ni rattachement de compte.
+- **Déconnexion** : ferme la session de l'application puis redirige vers la déconnexion Cloudflare.
+- **Erreurs HTMX** : si la session Access expire, une bannière rouge indique l'erreur et invite à recharger la page.
+- **Départ à zéro** : cette version ne reprend aucun compte existant. Supprimer le volume PostgreSQL (`docker compose down -v`) avant le premier démarrage, et `lutin-dev.db` en développement.
+- **Port** : le contrôle du jeton protège même si le port publié est joignable hors tunnel ; il peut être restreint à `127.0.0.1` si `cloudflared` tourne sur la même machine.
 
 Le schéma de base est généré par Hibernate (`ddl-auto=update`), sans outil de migration. Le modèle est décrit dans [docs/database.puml](docs/database.puml).
 
@@ -133,7 +159,7 @@ L'application écoute sur http://localhost:8181.
 
 ### Production (Docker)
 ```bash
-INVITATION_KEY=une-cle-secrete DB_PASSWORD=un-mot-de-passe docker compose up -d --build
+CF_ACCESS_TEAM_DOMAIN=monteam.cloudflareaccess.com CF_ACCESS_AUD=xxxx EMAIL_HMAC_SECRET=un-secret-de-32-caracteres-minimum DB_PASSWORD=un-mot-de-passe docker compose up -d --build
 ```
 Le port publié est `APP_PORT` (2424 par défaut).
 

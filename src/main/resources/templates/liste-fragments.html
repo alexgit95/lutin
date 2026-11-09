@@ -19,7 +19,7 @@
         </div>
     </section>
     <button class="chargement-lot bouton clair" type="button" th:if="${lot.suiteDisponible()}"
-            th:hx-get="@{/listes/{id}/cadeaux(id=${lot.listeId()},tag=${lot.tagActif()},page=${lot.page() + 1})}"
+            th:hx-get="${lot.filtreARembourser()} ? @{/listes/{id}/cadeaux(id=${lot.listeId()},tag=${lot.tagActif()},page=${lot.page() + 1},aRembourser=true)} : @{/listes/{id}/cadeaux(id=${lot.listeId()},tag=${lot.tagActif()},page=${lot.page() + 1})}"
             hx-trigger="revealed" hx-target="this" hx-swap="outerHTML">
         Charger la suite
     </button>
@@ -50,10 +50,21 @@
                       hx-trigger="change" hx-swap="outerHTML">
                     <input type="hidden" name="tag" th:value="${lot.tagActif()}" th:if="${lot.tagActif()}">
                     <input type="hidden" name="page" th:value="${lot.page()}">
+                    <input type="hidden" name="aRembourser" value="true" th:if="${lot.filtreARembourser()}">
                     <select name="statut" th:class="'st-' + ${cadeau.statut()}" onchange="if(!window.htmx)this.form.submit()">
                         <option th:each="s : ${statuts}" th:value="${s}" th:text="${s.libelle}"
                                 th:selected="${s == cadeau.statut()}">Statut</option>
                     </select>
+                </form>
+                <form th:if="${!lot.lecteur() and cadeau.remboursable()}" class="remb-form" method="post"
+                      th:action="@{/listes/{id}/cadeaux/{cid}/rembourse(id=${lot.listeId()},cid=${cadeau.id()})}"
+                      th:hx-post="@{/listes/{id}/cadeaux/{cid}/rembourse(id=${lot.listeId()},cid=${cadeau.id()})}"
+                      th:attr="hx-target='#cadeau-' + ${cadeau.id()}" hx-swap="outerHTML">
+                    <input type="hidden" name="tag" th:value="${lot.tagActif()}" th:if="${lot.tagActif()}">
+                    <input type="hidden" name="page" th:value="${lot.page()}">
+                    <input type="hidden" name="aRembourser" value="true" th:if="${lot.filtreARembourser()}">
+                    <button type="submit" class="pastille-remb" th:classappend="${cadeau.rembourseLe() != null} ? 'ok'"
+                            th:text="${cadeau.rembourseLe() != null} ? 'remboursé le ' + ${cadeau.rembourseLe()} : '€ à rembourser'">€ à rembourser</button>
                 </form>
             </td>
         </th:block>
@@ -80,12 +91,43 @@
     <span id="workflow-annonce" class="visuellement-cache" aria-live="polite" aria-atomic="true"></span>
 </nav>
 
+<section th:fragment="carteRemboursement(vue, oob)" id="carte-remboursement" class="panneau carte-remboursement"
+         th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">
+    <h2>À rembourser</h2>
+    <p class="remb-montants">
+        <strong><span th:replace="~{fragments :: montant(${vue.aRembourser()})}"></span></strong> à rembourser
+        &middot; <span th:replace="~{fragments :: montant(${vue.rembourse()})}"></span> déjà remboursés
+    </p>
+    <form th:action="@{/listes/{id}/remboursements(id=${vue.id()})}" method="post" class="ligne">
+        <span>À virer : <b><span th:replace="~{fragments :: montant(${vue.aRembourser()})}"></span></b></span>
+        <input type="date" name="date" th:value="${vue.aujourdhui()}" th:max="${vue.aujourdhui()}" required>
+        <button type="submit" th:disabled="${vue.aRembourser().signum() == 0}">Tout marquer remboursé</button>
+    </form>
+</section>
+
+<section th:fragment="alertesRemboursement(vue, oob)" id="alertes-remboursement"
+         th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">
+    <div class="alerte-remb" role="alert" th:each="a : ${vue.alertes()}">
+        <span>Virement en trop : <b><span th:replace="~{fragments :: montant(${a.montant()})}"></span></b>
+            pour « <span th:text="${a.cadeauNom()}">Cadeau</span> », qui n'est plus à rembourser.</span>
+        <form th:action="@{/listes/{id}/alertes/{aid}/fermer(id=${vue.id()},aid=${a.id()})}" method="post" class="inline">
+            <button type="submit" class="clair">Fermer</button>
+        </form>
+    </div>
+    <p class="vide" th:if="${vue.totalAlertes() > #lists.size(vue.alertes())}"
+       th:text="'… et ' + ${vue.totalAlertes() - #lists.size(vue.alertes())} + ' autre(s) alerte(s)'"></p>
+</section>
+
 <th:block th:fragment="miseAJourStatut">
     <th:block th:each="cadeau : ${vue.cadeaux()}" th:if="${cadeau.id() == cadeauId}">
         <tr th:replace="~{liste-fragments :: ligneCadeau(${cadeau}, ${lot}, ${statuts})}"></tr>
     </th:block>
     <template>
         <nav th:replace="~{liste-fragments :: barreWorkflow(${vue}, ${statuts}, true)}"></nav>
+        <th:block th:unless="${vue.lecteur()}">
+            <section th:replace="~{liste-fragments :: carteRemboursement(${vue}, true)}"></section>
+            <section th:replace="~{liste-fragments :: alertesRemboursement(${vue}, true)}"></section>
+        </th:block>
     </template>
 </th:block>
 </body>

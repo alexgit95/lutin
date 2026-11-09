@@ -31,6 +31,36 @@ document.body.addEventListener('htmx:afterSettle', fusionnerGroupesCadeaux);
 document.body.addEventListener('htmx:responseError', rendreChargementReessayable);
 document.body.addEventListener('htmx:sendError', rendreChargementReessayable);
 
+function afficherErreurHtmx(message) {
+    let bandeau = document.querySelector('#bandeau-erreur-htmx');
+    if (!bandeau) {
+        bandeau = document.createElement('div');
+        bandeau.id = 'bandeau-erreur-htmx';
+        bandeau.className = 'bandeau-erreur';
+        bandeau.setAttribute('role', 'alert');
+        const texte = document.createElement('span');
+        texte.className = 'bandeau-erreur-texte';
+        const fermer = document.createElement('button');
+        fermer.type = 'button';
+        fermer.textContent = 'Fermer';
+        fermer.addEventListener('click', () => bandeau.remove());
+        bandeau.append(texte, fermer);
+        document.body.prepend(bandeau);
+    }
+    bandeau.querySelector('.bandeau-erreur-texte').textContent = message;
+}
+
+function messageStatutHtmx(statut) {
+    if (statut === 401) return 'Session expirée (401), rechargez la page.';
+    if (statut === 403) return 'Action refusée (403).';
+    if (statut >= 500) return 'Erreur du serveur (' + statut + ').';
+    return 'Erreur (' + statut + ').';
+}
+
+document.body.addEventListener('htmx:responseError', (event) => afficherErreurHtmx(messageStatutHtmx(event.detail.xhr.status)));
+// Une redirection Cloudflare refusée par le navigateur apparaît comme une requête interrompue, sans statut.
+document.body.addEventListener('htmx:sendError', () => afficherErreurHtmx('Connexion impossible ou session expirée, rechargez la page.'));
+
 let changementStatut = null;
 
 function mouvementReduit() {

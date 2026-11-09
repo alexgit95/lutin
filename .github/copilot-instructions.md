@@ -9,7 +9,7 @@
 
 ## Profils Spring (deux modes uniquement)
 - `dev` (défaut) : développement local, **SQLite**, HTTP, sans Docker.
-- `prod` : Docker + **PostgreSQL**, HTTPS terminé par Cloudflare (`X-Forwarded-*`), cookies de session `Secure`. Variables : `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `INVITATION_KEY` (obligatoire).
+- `prod` : Docker + **PostgreSQL**, HTTPS terminé par Cloudflare (`X-Forwarded-*`), cookies de session `Secure`, authentification par **Cloudflare Access** (`lutin.acces.mode=cloudflare`). Variables : `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `EMAIL_HMAC_SECRET` (obligatoires) ; `INVITATION_KEY` ne sert qu'en dev.
 - Configuration : `application.properties` (commun), `application-dev.properties`, `application-prod.properties`.
 
 ## CI/CD

@@ -33,13 +33,18 @@ public class DashboardService {
     private final CadeauRepository cadeaux;
     private final PersonneRepository personnes;
     private final TagRepository tags;
+    private final AlerteRemboursementService alertes;
+    private final DateDuJour dateDuJour;
 
     public DashboardService(AccesListeService acces, CadeauRepository cadeaux,
-                            PersonneRepository personnes, TagRepository tags) {
+                            PersonneRepository personnes, TagRepository tags,
+                            AlerteRemboursementService alertes, DateDuJour dateDuJour) {
         this.acces = acces;
         this.cadeaux = cadeaux;
         this.personnes = personnes;
         this.tags = tags;
+        this.alertes = alertes;
+        this.dateDuJour = dateDuJour;
     }
 
     public record Options(List<VueListe.VuePersonne> personnes, List<VueListe.VueTag> tags) {
@@ -47,7 +52,7 @@ public class DashboardService {
 
     public record LotCadeaux(Long listeId, Long tagActif, boolean lecteur,
                              List<VueCadeau> cadeaux, List<VueListe.VueGroupe> groupes,
-                             int page, boolean suiteDisponible) {
+                             int page, boolean suiteDisponible, boolean filtreARembourser) {
     }
 
     /** Destinataires et tags proposables dans le formulaire de cadeau (propriétaire uniquement). */
@@ -59,10 +64,16 @@ public class DashboardService {
     }
 
     public VueListe construire(Long listeId, String login, Long tagId, int page) {
+        return construire(listeId, login, tagId, page, false);
+    }
+
+    public VueListe construire(Long listeId, String login, Long tagId, int page, boolean aRembourser) {
         AccesListeService.Acces a = acces.lecture(listeId, login);
         boolean lecteur = !a.proprietaire();
+        // Le filtre et les données de remboursement ne concernent que le propriétaire.
+        boolean filtre = aRembourser && !lecteur;
 
-        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur);
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur, filtre);
         List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
 
         // Les totaux incluent les cadeaux masqués ; la répartition par statut les exclut pour un lecteur.
@@ -78,19 +89,39 @@ public class DashboardService {
                 .map(this::vueTag).toList();
         List<VueListe.VueGroupe> groupes = grouper(vues);
 
+        BigDecimal aRembourserTotal = null;
+        BigDecimal rembourse = null;
+        java.time.LocalDate aujourdhui = null;
+        List<VueListe.VueAlerte> vuesAlertes = List.of();
+        long totalAlertes = 0;
+        if (!lecteur) {
+            aRembourserTotal = cadeaux.sommeARembourser(listeId);
+            rembourse = cadeaux.sommeRembourse(listeId);
+            aujourdhui = dateDuJour.aujourdhui();
+            AlerteRemboursementService.Alertes liste = alertes.lister(listeId, login);
+            vuesAlertes = liste.recentes();
+            totalAlertes = liste.total();
+        }
+
         return new VueListe(listeId, a.liste().getNom(), a.liste().getProprietaire().getLogin(), lecteur,
                 personnes.sommeBudgets(listeId), cadeaux.sommeDebourse(listeId), cadeaux.sommeResteAPayer(listeId),
             repartition, resultat.getTotalElements(), vuesTags, vues, groupes,
-                tagId, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1));
+                tagId, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1),
+                aRembourserTotal, rembourse, aujourdhui, filtre, vuesAlertes, totalAlertes);
     }
 
     public LotCadeaux chargerLot(Long listeId, String login, Long tagId, int page) {
+        return chargerLot(listeId, login, tagId, page, false);
+    }
+
+    public LotCadeaux chargerLot(Long listeId, String login, Long tagId, int page, boolean aRembourser) {
         AccesListeService.Acces a = acces.lecture(listeId, login);
         boolean lecteur = !a.proprietaire();
-        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur);
+        boolean filtre = aRembourser && !lecteur;
+        Page<Cadeau> resultat = chargerPage(listeId, tagId, page, lecteur, filtre);
         List<VueCadeau> vues = resultat.getContent().stream().map(c -> VueCadeau.depuis(c, lecteur)).toList();
         return new LotCadeaux(listeId, tagId, lecteur, vues, grouper(vues),
-                resultat.getNumber(), resultat.hasNext());
+                resultat.getNumber(), resultat.hasNext(), filtre);
     }
 
     private List<VueListe.VueGroupe> grouper(List<VueCadeau> cadeaux) {
@@ -118,13 +149,18 @@ public class DashboardService {
         return List.copyOf(groupes);
     }
 
-    private Page<Cadeau> chargerPage(Long listeId, Long tagId, int page, boolean lecteur) {
+    private Page<Cadeau> chargerPage(Long listeId, Long tagId, int page, boolean lecteur, boolean aRembourser) {
         int numero = Math.max(page, 0);
         Sort tri = Sort.by("personne.nom", "personne.id", "nom", "id");
         if (lecteur && tagId == null) {
             return cadeaux.findPourLecteur(listeId, PageRequest.of(numero, TAILLE_PAGE));
         }
         PageRequest demande = PageRequest.of(numero, TAILLE_PAGE, tri);
+        if (aRembourser) {
+            return tagId == null
+                    ? cadeaux.findARembourser(listeId, demande)
+                    : cadeaux.findARembourserAvecTag(listeId, tagId, demande);
+        }
         if (tagId == null) {
             return cadeaux.findByListeId(listeId, demande);
         }

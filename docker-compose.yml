@@ -34,8 +34,10 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/lutin
       DB_USERNAME: lutin
       DB_PASSWORD: ${DB_PASSWORD:-lutin}
-      # Clé d'invitation à l'inscription – obligatoire
-      INVITATION_KEY: ${INVITATION_KEY:?INVITATION_KEY doit être défini}
+      # Cloudflare Access : domaine du team, audience de l'application, secret de hachage des emails (32 caractères minimum)
+      CF_ACCESS_TEAM_DOMAIN: ${CF_ACCESS_TEAM_DOMAIN:?CF_ACCESS_TEAM_DOMAIN doit être défini}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD:?CF_ACCESS_AUD doit être défini}
+      EMAIL_HMAC_SECRET: ${EMAIL_HMAC_SECRET:?EMAIL_HMAC_SECRET doit être défini}
     depends_on:
       postgres:
         condition: service_healthy

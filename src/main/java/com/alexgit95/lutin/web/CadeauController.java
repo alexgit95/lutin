@@ -89,16 +89,34 @@ public class CadeauController {
     public String changerStatut(@PathVariable Long listeId, @PathVariable Long cadeauId,
                                 @RequestParam Statut statut, @RequestParam(required = false) Long tag,
                                 @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "false") boolean aRembourser,
                                 @RequestHeader(value = "HX-Request", required = false) String htmx,
                                 Principal principal, Model model) {
         cadeaux.changerStatut(listeId, cadeauId, principal.getName(), statut);
+        return reponseLigne(listeId, cadeauId, tag, page, aRembourser, htmx, principal, model);
+    }
+
+    /** Coche ou décoche le remboursement : fragment HTMX (ligne et carte) si demandé, sinon retour à la page. */
+    @PostMapping("/{cadeauId}/rembourse")
+    public String basculerRemboursement(@PathVariable Long listeId, @PathVariable Long cadeauId,
+                                        @RequestParam(required = false) Long tag,
+                                        @RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "false") boolean aRembourser,
+                                        @RequestHeader(value = "HX-Request", required = false) String htmx,
+                                        Principal principal, Model model) {
+        cadeaux.basculerRemboursement(listeId, cadeauId, principal.getName());
+        return reponseLigne(listeId, cadeauId, tag, page, aRembourser, htmx, principal, model);
+    }
+
+    private String reponseLigne(Long listeId, Long cadeauId, Long tag, int page, boolean aRembourser, String htmx,
+                                Principal principal, Model model) {
         if (htmx == null) {
             return "redirect:/listes/" + listeId;
         }
-        VueListe vue = dashboard.construire(listeId, principal.getName(), tag, page);
+        VueListe vue = dashboard.construire(listeId, principal.getName(), tag, page, aRembourser);
         model.addAttribute("vue", vue);
         model.addAttribute("lot", new DashboardService.LotCadeaux(vue.id(), vue.tagActif(), vue.lecteur(),
-            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages()));
+            vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages(), vue.filtreARembourser()));
         model.addAttribute("statuts", Statut.values());
         model.addAttribute("cadeauId", cadeauId);
         return "liste-fragments :: miseAJourStatut";
@@ -106,6 +124,8 @@ public class CadeauController {
 
     private String formulaire(Model model, Long listeId, Long cadeauId, CadeauForm form, Principal principal) {
         DashboardService.Options options = dashboard.options(listeId, principal.getName());
+        model.addAttribute("prixVerrouille",
+                cadeauId != null && cadeaux.estRembourse(listeId, cadeauId, principal.getName()));
         model.addAttribute("form", form);
         model.addAttribute("listeId", listeId);
         model.addAttribute("cadeauId", cadeauId);

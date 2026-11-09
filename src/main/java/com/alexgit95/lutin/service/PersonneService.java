@@ -42,13 +42,15 @@ public class PersonneService {
     private final CadeauRepository cadeaux;
     private final ListeAchatRepository listes;
     private final AccesListeService acces;
+    private final AlerteRemboursementService alertes;
 
     public PersonneService(PersonneRepository personnes, CadeauRepository cadeaux, ListeAchatRepository listes,
-                           AccesListeService acces) {
+                           AccesListeService acces, AlerteRemboursementService alertes) {
         this.personnes = personnes;
         this.cadeaux = cadeaux;
         this.listes = listes;
         this.acces = acces;
+        this.alertes = alertes;
     }
 
     /** Personnes de la liste avec leur budget, ce qui est dépensé et ce qui reste à payer (propriétaire seulement). */
@@ -87,6 +89,9 @@ public class PersonneService {
     public void supprimer(Long listeId, Long personneId, String login) {
         acces.proprietaire(listeId, login);
         Personne personne = dansLaListe(listeId, personneId);
+        // Les cadeaux remboursés disparaissent avec la personne : chaque virement devient inutile.
+        cadeaux.findByPersonneIdAndRembourseLeIsNotNull(personneId)
+                .forEach(c -> alertes.signaler(c.getListe(), c.getNom(), c.getPrix()));
         cadeaux.deleteByPersonneId(personneId);
         personnes.delete(personne);
     }

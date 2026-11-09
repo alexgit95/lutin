@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,14 +31,22 @@ public class CadeauService {
     private final TagRepository tags;
     private final AccesListeService acces;
     private final UrlTitleService titres;
+    private final AlerteRemboursementService alertes;
+    private final DateDuJour dateDuJour;
+
+    public record ResultatRemboursement(int nombre, BigDecimal somme) {
+    }
 
     public CadeauService(CadeauRepository cadeaux, PersonneRepository personnes, TagRepository tags,
-                         AccesListeService acces, UrlTitleService titres) {
+                         AccesListeService acces, UrlTitleService titres, AlerteRemboursementService alertes,
+                         DateDuJour dateDuJour) {
         this.cadeaux = cadeaux;
         this.personnes = personnes;
         this.tags = tags;
         this.acces = acces;
         this.titres = titres;
+        this.alertes = alertes;
+        this.dateDuJour = dateDuJour;
     }
 
     /** Hors transaction : le réseau ne doit pas retenir une connexion à la base. */
@@ -73,7 +82,48 @@ public class CadeauService {
 
     public void modifier(Long listeId, Long cadeauId, String login, CadeauCommande commande) {
         acces.proprietaire(listeId, login);
-        appliquer(dansLaListe(listeId, cadeauId), listeId, commande);
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (cadeau.getRembourseLe() != null) {
+            verrouillerPrix(cadeau, commande);
+        }
+        appliquer(cadeau, listeId, commande);
+        // Un cadeau remboursé qui n'est plus remboursable (pour un tiers) rend le virement inutile.
+        if (cadeau.getRembourseLe() != null && !cadeau.estRemboursable()) {
+            signalerVirementEnTrop(cadeau);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean estRembourse(Long listeId, Long cadeauId, String login) {
+        acces.proprietaire(listeId, login);
+        return dansLaListe(listeId, cadeauId).getRembourseLe() != null;
+    }
+
+    /** Coche ou décoche le remboursement ; la date est celle du jour. */
+    public void basculerRemboursement(Long listeId, Long cadeauId, String login) {
+        acces.proprietaire(listeId, login);
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (cadeau.getRembourseLe() != null) {
+            cadeau.setRembourseLe(null);
+            return;
+        }
+        if (!cadeau.estRemboursable()) {
+            throw new RequeteInvalideException(
+                    "Ce cadeau n'a pas encore quitté votre compte courant : il ne peut pas être remboursé");
+        }
+        cadeau.setRembourseLe(dateDuJour.aujourdhui());
+    }
+
+    /** Marque d'un coup tous les cadeaux remboursables non remboursés ; une date nulle vaut aujourd'hui. */
+    public ResultatRemboursement rembourserTout(Long listeId, String login, LocalDate date) {
+        acces.proprietaire(listeId, login);
+        LocalDate jour = date == null ? dateDuJour.aujourdhui() : date;
+        if (jour.isAfter(dateDuJour.aujourdhui())) {
+            throw new RequeteInvalideException("La date du virement ne peut pas être dans le futur");
+        }
+        BigDecimal somme = cadeaux.sommeARembourser(listeId);
+        int nombre = cadeaux.marquerRembourses(listeId, jour);
+        return new ResultatRemboursement(nombre, nombre == 0 ? BigDecimal.ZERO : somme);
     }
 
     public void changerStatut(Long listeId, Long cadeauId, String login, Statut statut) {
@@ -81,12 +131,37 @@ public class CadeauService {
         if (statut == null) {
             throw new RequeteInvalideException("Statut invalide");
         }
-        dansLaListe(listeId, cadeauId).setStatut(statut);
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        cadeau.setStatut(statut);
+        if (statut == Statut.A_ACHETER && cadeau.getRembourseLe() != null) {
+            signalerVirementEnTrop(cadeau);
+        }
     }
 
     public void supprimer(Long listeId, Long cadeauId, String login) {
         acces.proprietaire(listeId, login);
-        cadeaux.delete(dansLaListe(listeId, cadeauId));
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (cadeau.getRembourseLe() != null) {
+            signalerVirementEnTrop(cadeau);
+        }
+        cadeaux.delete(cadeau);
+    }
+
+    // La date est effacée et l'alerte garde le montant déjà viré, que le propriétaire ferme lui-même.
+    private void signalerVirementEnTrop(Cadeau cadeau) {
+        alertes.signaler(cadeau.getListe(), cadeau.getNom(), cadeau.getPrix());
+        cadeau.setRembourseLe(null);
+    }
+
+    private void verrouillerPrix(Cadeau cadeau, CadeauCommande commande) {
+        BigDecimal nouveau = prixValide(commande.prix());
+        BigDecimal ancien = cadeau.getPrix();
+        boolean identique = ancien == null ? nouveau == null
+                : nouveau != null && ancien.compareTo(nouveau) == 0;
+        if (!identique) {
+            throw new RequeteInvalideException(
+                    "Le prix d'un cadeau remboursé ne peut pas être modifié : décochez d'abord le remboursement");
+        }
     }
 
     private void appliquer(Cadeau cadeau, Long listeId, CadeauCommande commande) {

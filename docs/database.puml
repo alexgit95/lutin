@@ -6,7 +6,9 @@ entity "utilisateur" as utilisateur {
   * id : bigint <<PK>>
   --
   * login : varchar(50) <<unique>>
-  * password_hash : varchar
+  * login_cle : varchar(50) <<unique, login en minuscules>>
+  password_hash : varchar <<absent en mode cloudflare>>
+  email_hmac : varchar(64) <<unique, HMAC-SHA256 de l'email, mode cloudflare>>
   admin_marker : boolean <<unique, non nul = admin>>
 }
 
@@ -34,6 +36,7 @@ entity "cadeau" as cadeau {
   * statut : varchar(20)
   * masque : boolean
   * pour_tiers : boolean
+  rembourse_le : date <<nul = non remboursé ; propriétaire seulement>>
   * personne_id : bigint <<FK>>
   * liste_id : bigint <<FK>>
 }
@@ -104,6 +107,15 @@ entity "avis" as avis {
   <<index (destinataire_id)>>
 }
 
+entity "alerte_remboursement" as alerte_remboursement {
+  * id : bigint <<PK>>
+  --
+  * liste_id : bigint <<FK>>
+  * cadeau_nom : varchar(255)
+  * montant : numeric(12,2) <<virement en trop>>
+  * cree_le : timestamp <<reste jusqu'à sa fermeture>>
+}
+
 utilisateur ||--o{ liste_achat : possède
 liste_achat ||--o{ personne
 liste_achat ||--o{ cadeau
@@ -118,4 +130,5 @@ wishlist ||--o{ souhait
 wishlist ||--o{ wishlist_partage
 utilisateur ||--o{ wishlist_partage : lecteur
 utilisateur ||--o{ avis : destinataire
+liste_achat ||--o{ alerte_remboursement
 @enduml

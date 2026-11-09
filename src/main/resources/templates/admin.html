@@ -4,8 +4,14 @@
 <body class="auth">
 <main class="card">
     <h1>Administration</h1>
-    <p>Clé d'invitation actuelle (variable d'environnement <code>INVITATION_KEY</code>) :</p>
-    <p><code id="invitation-key" th:text="${invitationKey}"></code></p>
+    <th:block th:if="${modeCloudflare}">
+        <p>Aucune fonction d'administration disponible pour l'instant.</p>
+        <p>Les adresses autorisées sont gérées dans Cloudflare Access.</p>
+    </th:block>
+    <th:block th:unless="${modeCloudflare}">
+        <p>Clé d'invitation actuelle (variable d'environnement <code>INVITATION_KEY</code>) :</p>
+        <p><code id="invitation-key" th:text="${invitationKey}"></code></p>
+    </th:block>
     <p><a th:href="@{/}">Retour</a></p>
 </main>
 </body>

@@ -1,5 +1,6 @@
 package com.alexgit95.lutin.security;
 
+import com.alexgit95.lutin.config.ModeLocal;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,7 +16,9 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /** Mode local (développement et tests) : connexion par formulaire et session. */
     @Bean
+    @ModeLocal
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth

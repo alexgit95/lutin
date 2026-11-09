@@ -2,6 +2,46 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.9.0] - 2026-11-09
+
+### Added
+- Authentification par **Cloudflare Access** en prod (`lutin.acces.mode=cloudflare`, activé par `application-prod.properties`) : `CloudflareAccessFilter` valide à chaque requête le jeton `Cf-Access-Jwt-Assertion` (signature par la JWKS du team, émetteur, audience, expiration, présence d'un email) sans rien enregistrer en session ; sans jeton valide, 401. Chemins publics (`/p/**`, statiques, `/manifest.webmanifest`, `/sw.js`, `/error`) servis sans jeton, avec authentification facultative.
+- Identité : `utilisateur.email_hmac` (HMAC-SHA256 de l'email normalisé, `EmailHmacService`), `login_cle` (pseudo en minuscules, unique) ; l'email n'est jamais stocké, affiché ni journalisé. `AccesAuthentication.getName()` renvoie le pseudo.
+- Page `/bienvenue` et `PseudoService` : choix du pseudo à la première connexion (4 à 50 caractères `[A-Za-z0-9._-]`, unique sans casse, réservés `admin`, `administrateur`, `root`, `lutin`, `system`, `support`, immuable, création idempotente). Le premier compte créé est administrateur, y compris en cas de créations simultanées.
+- Déconnexion vers `https://<team>/cdn-cgi/access/logout`, bannière d'erreur visible pour les requêtes HTMX en échec (code de statut, session expirée, connexion impossible), `crossorigin="use-credentials"` sur le manifest.
+- Configuration prod obligatoire : `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `EMAIL_HMAC_SECRET` (32 caractères minimum) ; démarrage refusé sinon. Dépendance `spring-security-oauth2-jose`.
+- Tests : `EmailHmacServiceTest` (5), `CloudflareAccessConfigTest` (9), `JetonCloudflareTest` (7), `PseudoServiceTest` (10), `AccesCloudflareWebTest` (17). Total de la suite : 289.
+
+### Changed
+- `SecurityConfig` ne porte plus que la chaîne du mode local (`@ModeLocal`) ; `AuthController` et `RegistrationService` ne sont actifs qu'en mode local (`/login` et `/register` répondent 404 en prod).
+- `utilisateur.password_hash` devient facultatif ; `docs/database.puml` mis à jour.
+- `/admin` reste réservé à l'administrateur : clé d'invitation en dev, message neutre en prod. `INVITATION_KEY` n'est plus exigé en prod (`docker-compose.yml`, `application-prod.properties`).
+- **BREAKING** : aucun compte existant n'est repris ; recréer la base de prod (volume PostgreSQL) et `lutin-dev.db`.
+- Version du `pom.xml` portée à 0.9.0.
+
+### Fixed
+- Aucun.
+
+## [0.8.0] - 2026-11-09
+
+### Added
+- Remboursement des cadeaux (propriétaire seulement) : colonne `cadeau.rembourse_le` (nullable) et pastille par cadeau « € à rembourser » / « remboursé le jj/MM » (`POST /listes/{id}/cadeaux/{cid}/rembourse`, HTMX ou redirection). Un cadeau est remboursable s'il est Commandé ou plus, avec un prix, et pas « pour un tiers » ; sinon la requête est refusée.
+- Carte « À rembourser » : montants à rembourser et déjà remboursés (`CadeauRepository.sommeARembourser` et `sommeRembourse`), « À virer : X € » et bouton « Tout marquer remboursé » (`POST /listes/{id}/remboursements`) avec date préremplie, refus d'une date future, mise à jour groupée limitée aux cadeaux éligibles et compte rendu (nombre et somme).
+- Filtre « À rembourser » (paramètre `aRembourser`, avec ou sans tag, propagé au chargement continu) ; ignoré pour un lecteur.
+- Entité `AlerteRemboursement` (table `alerte_remboursement`), `AlerteRemboursementService` et `POST /listes/{id}/alertes/{aid}/fermer` : alerte « virement en trop » quand un cadeau remboursé repasse à « À acheter », est supprimé, devient « pour un tiers » ou voit sa personne supprimée. Elle persiste jusqu'à fermeture (20 plus récentes et total) et est supprimée avec la liste.
+- `DateDuJour` : date du jour dans le fuseau `lutin.fuseau-horaire` (défaut `Europe/Paris`).
+- `docs/database.puml` mis à jour.
+- Tests : `RemboursementTest` (19) et `RemboursementWebTest` (12). Total de la suite : 241.
+
+### Changed
+- Le prix d'un cadeau remboursé est verrouillé (refus serveur et champ en lecture seule dans le formulaire) ; la date n'est pas touchée par les autres modifications.
+- Le Déboursé et le Reste à payer du dashboard sont inchangés par le remboursement.
+- Aucune donnée de remboursement n'est envoyée à un lecteur (page, lots, réponses HTMX).
+- Version du `pom.xml` portée à 0.8.0.
+
+### Fixed
+- Aucun.
+
 ## [0.7.0] - 2026-11-06
 
 ### Added
