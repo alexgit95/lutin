@@ -180,7 +180,7 @@ class AccesCloudflareWebTest {
         String html = mvc.perform(get("/admin").with(jeton(ALICE))).andExpect(status().isOk())
                 .andExpect(view().name("admin")).andReturn().getResponse().getContentAsString();
 
-        assertThat(html).contains("Aucune fonction d'administration disponible pour l'instant")
+        assertThat(html).contains("Sauvegarde")
                 .doesNotContain("invitation-key").doesNotContain("INVITATION_KEY").doesNotContain("cle-test");
         mvc.perform(get("/admin").with(jeton(BOB))).andExpect(status().isForbidden());
     }

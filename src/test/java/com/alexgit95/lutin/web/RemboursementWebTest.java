@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -87,72 +88,100 @@ class RemboursementWebTest {
         return id;
     }
 
-    private String page(String login, String requete) throws Exception {
-        return mvc.perform(get("/listes/" + listeId + requete).with(user(login)))
+    private String page(String login, String chemin) throws Exception {
+        return mvc.perform(get("/listes/" + listeId + chemin).with(user(login)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
+    private String onglet(String login) throws Exception {
+        return page(login, "/remboursements");
     }
 
     private static int occurrences(String texte, String motif) {
         return texte.split(java.util.regex.Pattern.quote(motif), -1).length - 1;
     }
 
+    /** Un cadeau remboursé puis remis à « À acheter » : crée une alerte. */
+    private void creerUneAlerte() {
+        Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, id, "alice");
+        cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER);
+    }
+
     @Test
-    void leProprietaireVoitLaCarteLesPastillesEtLeFiltre() throws Exception {
+    void lOngletMontreLaCarteLesPastillesEtSeulementLesCadeauxRemboursables() throws Exception {
         cadeau("Montre", "80", Statut.COMMANDE, false);
         cadeau("Livre", "20", Statut.LIVRE, false);
         cadeau("Jeu", "15", Statut.A_ACHETER, false);
         cadeau("Cadeau tiers", "30", Statut.COMMANDE, true);
 
-        String html = page("alice", "");
+        mvc.perform(get("/listes/" + listeId + "/remboursements").with(user("alice")))
+                .andExpect(status().isOk()).andExpect(view().name("remboursement"));
+        String html = onglet("alice");
 
         assertThat(html).contains("id=\"carte-remboursement\"").contains("À virer :").contains("100,00")
-                .contains("value=\"" + dateDuJour.aujourdhui() + "\"")
-                .contains("Tout marquer remboursé")
-                .contains("aRembourser=true");
+                .contains("value=\"" + dateDuJour.aujourdhui() + "\"").contains("Tout marquer remboursé")
+                .contains("Montre").contains("Livre").doesNotContain("Jeu").doesNotContain("Cadeau tiers");
         assertThat(occurrences(html, "class=\"pastille-remb")).isEqualTo(2);
-        assertThat(html).contains("à rembourser</button>");
-        assertThat(html).doesNotContain("Virement en trop");
+        assertThat(html).contains("€ à rembourser").doesNotContain("Virement en trop");
+    }
+
+    @Test
+    void lesCadeauxNonRemboursesPrecedentLesRembourses() throws Exception {
+        Long deja = cadeau("Deja", "10", Statut.COMMANDE, false);
+        cadeau("Restant", "20", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, deja, "alice");
+
+        String html = onglet("alice");
+
+        assertThat(html.indexOf("Restant")).isLessThan(html.indexOf("Deja"));
+        assertThat(html).contains("remboursé le ");
     }
 
     @Test
     void leBoutonDeRemboursementGroupeEstInactifSiRienARembourser() throws Exception {
         cadeau("Jeu", "15", Statut.A_ACHETER, false);
 
-        String html = page("alice", "");
+        String html = onglet("alice");
 
-        assertThat(html).contains("id=\"carte-remboursement\"").contains("disabled");
+        assertThat(html).contains("id=\"carte-remboursement\"").contains("disabled")
+                .contains("Aucun cadeau à rembourser");
     }
 
     @Test
-    void lePastilleCocheRepondEnHtmxAvecLaCarteEnOob() throws Exception {
+    void lePastilleCocheRepondEnHtmxAvecLaLigneEtLaCarteEnOob() throws Exception {
         Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
 
         String reponse = mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/rembourse")
                         .with(user("alice")).with(csrf()).header("HX-Request", "true"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-        assertThat(reponse).contains("id=\"cadeau-" + id + "\"").contains("remboursé le ")
-                .contains("id=\"carte-remboursement\"").contains("id=\"alertes-remboursement\"")
-                .contains("hx-swap-oob=\"outerHTML\"");
+        assertThat(reponse).contains("id=\"remb-" + id + "\"").contains("remboursé le ")
+                .contains("id=\"carte-remboursement\"").contains("hx-swap-oob=\"outerHTML\"");
         assertThat(cadeaux.findById(id).orElseThrow().getRembourseLe()).isEqualTo(dateDuJour.aujourdhui());
     }
 
     @Test
-    void sansHtmxLeCochageRedirigeVersLaListe() throws Exception {
+    void sansHtmxLeCochageRedirigeVersLOnglet() throws Exception {
         Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
 
         mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/rembourse").with(user("alice")).with(csrf()))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/listes/" + listeId));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/listes/" + listeId + "/remboursements"));
+        mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/rembourse").with(user("alice")).with(csrf())
+                        .param("page", "2"))
+                .andExpect(redirectedUrl("/listes/" + listeId + "/remboursements?page=2"));
     }
 
     @Test
-    void leRemboursementGroupeAnnonceLeNombreEtLaSomme() throws Exception {
+    void leRemboursementGroupeAnnonceLeNombreEtLaSommeEtRevientSurLOnglet() throws Exception {
         cadeau("A", "80", Statut.COMMANDE, false);
         cadeau("B", "20.50", Statut.LIVRE, false);
 
         mvc.perform(post("/listes/" + listeId + "/remboursements").with(user("alice")).with(csrf())
                         .param("date", dateDuJour.aujourdhui().toString()))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/listes/" + listeId))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/listes/" + listeId + "/remboursements"))
                 .andExpect(flash().attribute("info", org.hamcrest.Matchers.allOf(
                         org.hamcrest.Matchers.containsString("2 cadeaux marqués remboursés"),
                         org.hamcrest.Matchers.containsString("100,50"))));
@@ -165,54 +194,64 @@ class RemboursementWebTest {
 
         mvc.perform(post("/listes/" + listeId + "/remboursements").with(user("alice")).with(csrf())
                         .param("date", dateDuJour.aujourdhui().plusDays(2).toString()))
-                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/listes/" + listeId + "/remboursements"))
                 .andExpect(flash().attributeExists("erreur"));
         assertThat(cadeaux.findById(id).orElseThrow().getRembourseLe()).isNull();
     }
 
     @Test
-    void leFiltreARembourserEtLeChargementContinuNeGardentQueLesCadeauxARembourser() throws Exception {
-        Long rembourse = cadeau("Deja", "10", Statut.COMMANDE, false);
-        cadeauxService.basculerRemboursement(listeId, rembourse, "alice");
-        cadeau("Restant", "20", Statut.COMMANDE, false);
-        cadeau("Nonachete", "30", Statut.A_ACHETER, false);
+    void lAlertePersisteDansLOngletJusquaSaFermetureEtJamaisSurLeDashboard() throws Exception {
+        creerUneAlerte();
 
-        String html = page("alice", "?aRembourser=true");
-        assertThat(html).contains("Restant").doesNotContain("Nonachete").doesNotContain("Deja");
-
-        String lot = mvc.perform(get("/listes/" + listeId + "/cadeaux").param("aRembourser", "true").with(user("alice")))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(lot).contains("Restant").doesNotContain("Nonachete").doesNotContain("Deja");
-    }
-
-    @Test
-    void uneAlertePersisteSurLaPageJusquaSaFermeture() throws Exception {
-        Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
-        cadeauxService.basculerRemboursement(listeId, id, "alice");
-
-        mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/statut").with(user("alice")).with(csrf())
-                        .header("HX-Request", "true").param("statut", "A_ACHETER"))
-                .andExpect(status().isOk());
-
-        String html = page("alice", "");
-        assertThat(html).contains("Virement en trop").contains("80,00").contains("Montre");
-        assertThat(page("alice", "")).contains("Virement en trop");
+        assertThat(onglet("alice")).contains("Virement en trop").contains("80,00").contains("Montre");
+        assertThat(onglet("alice")).contains("Virement en trop");
+        assertThat(page("alice", "")).doesNotContain("Virement en trop").doesNotContain("alertes-remboursement");
 
         Long alerteId = alertes.findAll().get(0).getId();
         mvc.perform(post("/listes/" + listeId + "/alertes/" + alerteId + "/fermer").with(user("alice")).with(csrf()))
-                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/listes/" + listeId));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/listes/" + listeId + "/remboursements"));
 
-        assertThat(page("alice", "")).doesNotContain("Virement en trop");
+        assertThat(onglet("alice")).doesNotContain("Virement en trop");
     }
 
     @Test
-    void lesActionsSontInterditesAuLecteurEtALEtranger() throws Exception {
+    void leBadgeDeLOngletCompteLesAlertesSurLesPagesDeLaListe() throws Exception {
+        String sans = page("alice", "");
+        assertThat(sans).contains("id=\"badge-remboursement\"").containsPattern("id=\"badge-remboursement\"[^>]*hidden");
+
+        creerUneAlerte();
+
+        for (String chemin : new String[]{"", "/remboursements", "/personnes", "/partages", "/reglages"}) {
+            String html = page("alice", chemin);
+            assertThat(html).containsPattern("id=\"badge-remboursement\"[^>]*>1<")
+                    .doesNotContainPattern("id=\"badge-remboursement\"[^>]*hidden");
+        }
+    }
+
+    @Test
+    void leChangementDeStatutDuDashboardMetAJourLeBadgeEnOobSansAlerteNiCarte() throws Exception {
         Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
         cadeauxService.basculerRemboursement(listeId, id, "alice");
-        cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER);
+
+        String reponse = mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/statut")
+                        .with(user("alice")).with(csrf()).header("HX-Request", "true").param("statut", "A_ACHETER"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        assertThat(reponse).containsPattern("id=\"badge-remboursement\"[^>]*>1<").contains("hx-swap-oob=\"outerHTML\"")
+                .contains("id=\"workflow\"").doesNotContain("carte-remboursement")
+                .doesNotContain("alertes-remboursement").doesNotContain("Virement en trop");
+    }
+
+    @Test
+    void lesActionsEtLOngletSontInterditsAuLecteurEtALEtranger() throws Exception {
+        Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
+        creerUneAlerte();
         Long alerteId = alertes.findAll().get(0).getId();
 
         for (String intrus : new String[]{"bob", "carol"}) {
+            mvc.perform(get("/listes/" + listeId + "/remboursements").with(user(intrus)))
+                    .andExpect(status().isForbidden());
             mvc.perform(post("/listes/" + listeId + "/cadeaux/" + id + "/rembourse").with(user(intrus)).with(csrf()))
                     .andExpect(status().isForbidden());
             mvc.perform(post("/listes/" + listeId + "/remboursements").with(user(intrus)).with(csrf()))
@@ -235,25 +274,45 @@ class RemboursementWebTest {
     }
 
     @Test
-    void lePageDunLecteurNeContientAucuneDonneeDeRemboursement() throws Exception {
-        Long a = cadeau("Montre", "80", Statut.COMMANDE, false);
-        cadeauxService.basculerRemboursement(listeId, a, "alice");
-        Long b = cadeau("Livre", "20", Statut.LIVRE, false);
-        cadeauxService.basculerRemboursement(listeId, b, "alice");
-        cadeauxService.changerStatut(listeId, b, "alice", Statut.A_ACHETER);
-        cadeau("Jeu", "15", Statut.COMMANDE, false);
+    void leDashboardGardeTousLesCadeauxSansAucuneDonneeDeRemboursement() throws Exception {
+        Long montre = cadeau("Montre", "80", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, montre, "alice");
+        cadeau("Jeu", "15", Statut.A_ACHETER, false);
+        cadeau("Cadeau tiers", "30", Statut.COMMANDE, true);
+        creerUneAlerte();
+
+        String html = page("alice", "?aRembourser=true");
+        String lot = mvc.perform(get("/listes/" + listeId + "/cadeaux").param("aRembourser", "true").with(user("alice")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        for (String contenu : new String[]{html, lot}) {
+            assertThat(contenu).doesNotContain("pastille-remb").doesNotContain("carte-remboursement")
+                    .doesNotContain("alertes-remboursement").doesNotContain("À virer")
+                    .doesNotContain("Virement en trop").doesNotContain("remboursé le")
+                    .doesNotContain("aRembourser").doesNotContain(">À rembourser<");
+        }
+        assertThat(html).contains("Montre").contains("Jeu").contains("Cadeau tiers")
+                .contains("id=\"workflow\"").contains("class=\"statut-form\"");
+        assertThat(html).contains(">Remboursement<span");
+    }
+
+    @Test
+    void unLecteurNeVoitNiLOngletNiLeBadgeNiAucuneDonneeDeRemboursement() throws Exception {
+        Long id = cadeau("Montre", "80", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, id, "alice");
+        creerUneAlerte();
 
         String html = page("bob", "?aRembourser=true");
         String lot = mvc.perform(get("/listes/" + listeId + "/cadeaux").param("aRembourser", "true").with(user("bob")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         for (String contenu : new String[]{html, lot}) {
-            assertThat(contenu).doesNotContain("carte-remboursement").doesNotContain("alertes-remboursement")
-                    .doesNotContain("pastille-remb").doesNotContain("À virer").doesNotContain("Virement en trop")
-                    .doesNotContain("remboursé").doesNotContain("à rembourser").doesNotContain("/rembourse")
-                    .doesNotContain("aRembourser");
+            assertThat(contenu).doesNotContain("badge-remboursement").doesNotContain("/remboursements")
+                    .doesNotContain("pastille-remb").doesNotContain("carte-remboursement")
+                    .doesNotContain("Virement en trop").doesNotContain("remboursé").doesNotContain("à rembourser")
+                    .doesNotContain("/rembourse").doesNotContain("aRembourser");
         }
-        assertThat(html).contains("Montre").contains("Livre").contains("Jeu");
+        assertThat(html).contains("Montre");
     }
 
     @Test

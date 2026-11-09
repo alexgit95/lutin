@@ -2,6 +2,65 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.12.0] - 2026-11-09
+
+### Added
+- **Sauvegarde et restauration de la base** depuis l'écran `/admin` (administrateur seulement, CSRF, dans les deux modes) :
+  - `POST /admin/export` : fichier JSON `lutin-export-AAAA-MM-JJ.json` (`Cache-Control: no-store`) contenant les 12 tables, écrit en flux par lots de 500 lignes (`ExportService`) avec un en-tête (format `lutin-export`, version de format 1, mode d'accès, version de l'application, date).
+  - `POST /admin/import` (multipart) : remplacement total en une transaction (`ImportService`) après une première passe de validation sans écriture (format, version, mode, tables et colonnes, types, longueurs, énumérations, références, identifiants uniques, JSON complet). Identifiants conservés, séquences PostgreSQL recalées, jetons des liens publics et hachés restaurés.
+  - Garde-fous : le compte de l'administrateur courant doit figurer dans le fichier avec le rôle administrateur (login en `local`, empreinte d'email en `cloudflare`), confirmation « IMPORTER », un seul import à la fois (409), fichier d'un autre mode ou d'une autre version refusé, taille limitée à 100 Mo avec message lisible (`TransfertAdvice`).
+  - Descripteurs de tables explicites (`Tables`) et test de conformité au modèle JPA : une colonne ajoutée à une entité sans mise à jour des descripteurs fait échouer le test.
+- Tests : `TransfertTest` (15), `TransfertCloudflareTest` (6), `AdminTransfertWebTest` (6), `TablesConformiteTest` (3), `LimiteEnvoiTest` (2). Total de la suite : 334.
+
+### Changed
+- L'écran `/admin` affiche la section de sauvegarde dans les deux modes ; le message « aucune fonction d'administration » disparaît en mode `cloudflare`.
+- `spring.servlet.multipart.max-file-size` et `max-request-size` portés à 100 Mo (ils étaient à 1 Mo par défaut).
+- Version du `pom.xml` portée à 0.12.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée ; aucune modification du schéma de données.
+
+### Fixed
+- Aucun.
+
+## [0.11.0] - 2026-11-09
+
+### Added
+- Onglet **« Remboursement »** (`GET /listes/{id}/remboursements`, propriétaire seulement, 403 sinon) : alertes « virement en trop », carte « À virer » avec « Tout marquer remboursé », et liste paginée (50) des cadeaux remboursables avec leur pastille, les non remboursés d'abord puis par personne, nom et identifiant (`CadeauRepository.findRemboursables`, `RemboursementService`, `VueRemboursement`).
+- Badge d'alertes sur l'onglet, calculé pour les pages GET d'une liste du propriétaire (`LayoutAdvice`, `AlerteRemboursementService.compter`) et rafraîchi en `hx-swap-oob` après un changement de statut sur le dashboard.
+- Tests : `RemboursementTest` et `RemboursementWebTest` adaptés à l'onglet (ordre, pagination, badge, droits, dashboard sans donnée de remboursement). Total de la suite : 302.
+
+### Changed
+- Le **dashboard** ne porte plus ni carte, ni alertes, ni pastille, ni filtre « À rembourser » : tous les cadeaux, leurs statuts modifiables, le filtre par tag et la barre de workflow. `VueListe`, `VueCadeau` et `LotCadeaux` perdent les champs de remboursement ; la réponse d'un changement de statut ne renvoie plus que la ligne, la barre de workflow et le badge.
+- Le cochage d'une pastille, le remboursement groupé et la fermeture d'une alerte ramènent sur l'onglet (cochage sans HTMX : `?page=` conservé).
+- Version du `pom.xml` portée à 0.11.0.
+
+### Removed
+- Filtre « À rembourser » et paramètre `aRembourser` (ignoré s'il est fourni) du dashboard et du chargement continu.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée ; aucune modification du schéma de données.
+
+### Fixed
+- Aucun.
+
+## [0.10.0] - 2026-11-09
+
+### Added
+- Wishlists : un clic sur la tuile d'un article qui a une URL l'ouvre dans un nouvel onglet (lien étiré sur le titre, `target="_blank"`, `rel="noopener noreferrer"`), et un bouton « Copier » copie l'URL dans le presse-papiers (« Lien copié »). Valable pour le propriétaire, les lecteurs et la page publique `/p/{jeton}` ; une tuile sans URL n'est ni cliquable ni copiable.
+- Écran « Modifier l'article » : bouton « Supprimer l'article » avec confirmation (absent de l'écran d'ajout).
+- Tests : `WishlistTuilesWebTest` (6). Total de la suite : 295.
+
+### Changed
+- Le bouton « Voir » est retiré des tuiles, et « Supprimer » quitte la tuile du propriétaire (« Modifier » est conservé). Aucun changement de route, de droit, de schéma ni d'avis aux lecteurs.
+- Version du `pom.xml` portée à 0.10.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée.
+
+### Fixed
+- Aucun.
+
 ## [0.9.0] - 2026-11-09
 
 ### Added

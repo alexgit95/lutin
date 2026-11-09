@@ -23,19 +23,12 @@
         <div class="kpi violet"><span>Cadeaux</span><strong th:text="${vue.totalCadeaux()}">0</strong></div>
     </section>
 
-    <th:block th:unless="${vue.lecteur()}">
-        <section th:replace="~{liste-fragments :: alertesRemboursement(${vue}, false)}"></section>
-        <section th:replace="~{liste-fragments :: carteRemboursement(${vue}, false)}"></section>
-    </th:block>
-
     <section class="panneau">
         <h2>Cadeaux</h2>
         <div class="tags">
-            <a th:href="${vue.filtreARembourser()} ? @{/listes/{id}(id=${vue.id()},aRembourser=true)} : @{/listes/{id}(id=${vue.id()})}" th:class="${vue.tagActif() == null} ? 'tag actif' : 'tag'">Tous</a>
-            <a th:each="t : ${vue.tags()}" th:href="${vue.filtreARembourser()} ? @{/listes/{id}(id=${vue.id()},tag=${t.id()},aRembourser=true)} : @{/listes/{id}(id=${vue.id()},tag=${t.id()})}"
+            <a th:href="@{/listes/{id}(id=${vue.id()})}" th:class="${vue.tagActif() == null} ? 'tag actif' : 'tag'">Tous</a>
+            <a th:each="t : ${vue.tags()}" th:href="@{/listes/{id}(id=${vue.id()},tag=${t.id()})}"
                th:class="${vue.tagActif() == t.id()} ? 'tag actif' : 'tag'" th:text="${t.nom()}">tag</a>
-            <a th:unless="${vue.lecteur()}" th:href="${vue.filtreARembourser()} ? @{/listes/{id}(id=${vue.id()},tag=${vue.tagActif()})} : @{/listes/{id}(id=${vue.id()},tag=${vue.tagActif()},aRembourser=true)}"
-               th:class="${vue.filtreARembourser()} ? 'tag actif' : 'tag'">À rembourser</a>
             <form th:unless="${vue.lecteur()}" th:action="@{/listes/{id}/tags(id=${vue.id()})}" method="post" class="inline">
                 <input type="text" name="nom" placeholder="Nouveau tag" maxlength="50" class="petit" required>
             </form>

@@ -13,7 +13,7 @@
 
     <groupId>com.alexgit95</groupId>
     <artifactId>lutin</artifactId>
-    <version>0.9.0</version>
+    <version>0.12.0</version>
     <packaging>jar</packaging>
     <name>lutin</name>
     <description>Gestion d'achats de cadeaux (PWA)</description>

@@ -3,7 +3,7 @@ package com.alexgit95.lutin.service;
 import com.alexgit95.lutin.domain.AlerteRemboursement;
 import com.alexgit95.lutin.domain.ListeAchat;
 import com.alexgit95.lutin.repository.AlerteRemboursementRepository;
-import com.alexgit95.lutin.vue.VueListe.VueAlerte;
+import com.alexgit95.lutin.vue.VueRemboursement.VueAlerte;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +40,12 @@ public class AlerteRemboursementService {
         alerte.setMontant(montant);
         alerte.setCreeLe(horloge.instant());
         alertes.save(alerte);
+    }
+
+    /** Nombre d'alertes pour le badge de l'onglet ; zéro pour tout utilisateur qui n'est pas le propriétaire. */
+    @Transactional(readOnly = true)
+    public long compter(Long listeId, String login) {
+        return alertes.countByListeIdAndListeProprietaireLogin(listeId, login);
     }
 
     @Transactional(readOnly = true)

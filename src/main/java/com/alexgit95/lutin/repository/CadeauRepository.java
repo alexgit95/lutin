@@ -44,18 +44,9 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
 
     @EntityGraph(attributePaths = "personne")
     @Query(value = "select c from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
-            + " and c.rembourseLe is null",
-            countQuery = "select count(c) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
-                    + " and c.rembourseLe is null")
-    Page<Cadeau> findARembourser(@Param("listeId") Long listeId, Pageable pageable);
-
-    @EntityGraph(attributePaths = "personne")
-    @Query(value = "select c from Cadeau c join c.tags t where c.liste.id = :listeId and t.id = :tagId and "
-            + REMBOURSABLE + " and c.rembourseLe is null",
-            countQuery = "select count(c) from Cadeau c join c.tags t where c.liste.id = :listeId and t.id = :tagId and "
-                    + REMBOURSABLE + " and c.rembourseLe is null")
-    Page<Cadeau> findARembourserAvecTag(@Param("listeId") Long listeId, @Param("tagId") Long tagId,
-                                        Pageable pageable);
+            + " order by case when c.rembourseLe is null then 0 else 1 end, c.personne.nom, c.personne.id, c.nom, c.id",
+            countQuery = "select count(c) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE)
+    Page<Cadeau> findRemboursables(@Param("listeId") Long listeId, Pageable pageable);
 
     @Query("select coalesce(sum(c.prix), 0) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
             + " and c.rembourseLe is null")

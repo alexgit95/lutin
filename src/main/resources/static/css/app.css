@@ -200,3 +200,17 @@ button.pastille-remb.ok { background: #dcf7e6; color: #1d6b3c; border: 1px solid
 
 .bandeau-erreur { position: sticky; top: 0; z-index: 20; display: flex; gap: .75rem; align-items: center; justify-content: space-between; padding: .6rem 1rem; background: #c0392b; color: #fff; font-size: .9rem; }
 .bandeau-erreur button { margin: 0; padding: .25rem .7rem; background: #fff; color: #c0392b; }
+
+.tuile-lien { color: inherit; text-decoration: none; }
+.tuile-lien::after { content: ""; position: absolute; inset: 0; border-radius: 20px; }
+.tuile-lien:hover { text-decoration: underline; }
+.tuile-lien:focus-visible::after { outline: 3px solid var(--accent); outline-offset: -3px; }
+.tuile-pied { position: relative; z-index: 1; }
+form.suppression-souhait { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bord); }
+
+.badge[hidden] { display: none; }
+.onglets .badge { margin-left: .3rem; padding: .1rem .5rem; background: #c0392b; color: #fff; }
+
+.sauvegarde { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bord); }
+.sauvegarde .avertissement { padding: .6rem .8rem; border-radius: 8px; background: #fff0d9; color: #8a5a00; font-size: .9rem; }
+.sauvegarde button.danger { background: #c0392b; color: #fff; }

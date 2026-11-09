@@ -28,12 +28,15 @@
             <span class="ruban-pris" th:if="${s.prisPar() != null}">&#10003; Pris par <b th:text="${s.prisPar()}">bob</b></span>
             <div class="tuile-visuel" th:classappend="'teinte-' + ${s.id() % 6}" th:text="${s.initiale()}" aria-hidden="true">A</div>
             <div class="tuile-corps">
-                <h3 class="tuile-titre" th:text="${s.nom()}">Article</h3>
+                <h3 class="tuile-titre">
+                    <a class="tuile-lien" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer" th:text="${s.nom()}">Article</a>
+                    <span th:unless="${s.url() != null}" th:text="${s.nom()}">Article</span>
+                </h3>
                 <span class="tuile-hote" th:if="${s.hote() != null}" th:text="${s.hote()}">exemple.fr</span>
                 <div class="tuile-prix" th:if="${s.prix() != null}"><span th:replace="~{fragments :: montant(${s.prix()})}"></span></div>
             </div>
             <div class="tuile-pied">
-                <a class="bouton clair" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer">Voir</a>
+                <button type="button" class="bouton clair" th:if="${s.url() != null}" data-copier th:attr="data-lien=${s.url()}">Copier</button>
                 <form th:if="${s.prisPar() == null}" method="post"
                       th:action="@{/wishlists/{id}/souhaits/{sid}/pris(id=${vue.id()},sid=${s.id()})}">
                     <input type="hidden" name="page" th:value="${vue.page()}">

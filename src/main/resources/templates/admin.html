@@ -4,14 +4,37 @@
 <body class="auth">
 <main class="card">
     <h1>Administration</h1>
+    <div th:replace="~{fragments :: messages}"></div>
     <th:block th:if="${modeCloudflare}">
-        <p>Aucune fonction d'administration disponible pour l'instant.</p>
         <p>Les adresses autorisées sont gérées dans Cloudflare Access.</p>
     </th:block>
     <th:block th:unless="${modeCloudflare}">
         <p>Clé d'invitation actuelle (variable d'environnement <code>INVITATION_KEY</code>) :</p>
         <p><code id="invitation-key" th:text="${invitationKey}"></code></p>
     </th:block>
+
+    <section class="sauvegarde" id="sauvegarde">
+        <h2>Sauvegarde</h2>
+        <p class="avertissement">Le fichier d'export contient toutes les données, y compris des informations sensibles
+            (empreintes d'emails, mots de passe hachés en mode local, liens publics). Conservez-le en lieu sûr.</p>
+        <form th:action="@{/admin/export}" method="post">
+            <button type="submit">Exporter la base</button>
+        </form>
+
+        <h3>Restauration</h3>
+        <p class="avertissement"><b>L'import remplace tout</b> : toutes les données actuelles, utilisateurs compris,
+            sont supprimées puis remplacées par celles du fichier. Votre compte administrateur doit figurer dans le fichier.</p>
+        <form th:action="@{/admin/import}" method="post" enctype="multipart/form-data"
+              onsubmit="return confirm('Remplacer toute la base par ce fichier ?')">
+            <label>Fichier d'export
+                <input type="file" name="fichier" accept=".json,application/json" required>
+            </label>
+            <label>Tapez <b>IMPORTER</b> pour confirmer
+                <input type="text" name="confirmation" autocomplete="off" required>
+            </label>
+            <button type="submit" class="danger">Importer et remplacer</button>
+        </form>
+    </section>
     <p><a th:href="@{/}">Retour</a></p>
 </main>
 </body>

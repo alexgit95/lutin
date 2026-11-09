@@ -10,8 +10,8 @@ import com.alexgit95.lutin.repository.PartageRepository;
 import com.alexgit95.lutin.repository.PersonneRepository;
 import com.alexgit95.lutin.repository.TagRepository;
 import com.alexgit95.lutin.repository.UtilisateurRepository;
-import com.alexgit95.lutin.vue.VueCadeau;
 import com.alexgit95.lutin.vue.VueListe;
+import com.alexgit95.lutin.vue.VueRemboursement;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +37,7 @@ class RemboursementTest {
     @Autowired CadeauService cadeauxService;
     @Autowired PartageService partagesService;
     @Autowired DashboardService dashboard;
+    @Autowired RemboursementService remboursements;
     @Autowired AlerteRemboursementService alertesService;
     @Autowired DateDuJour dateDuJour;
     @Autowired UtilisateurRepository utilisateurs;
@@ -82,12 +84,12 @@ class RemboursementTest {
         return cadeaux.findById(id).orElseThrow().getRembourseLe();
     }
 
-    private VueListe vue(String login, boolean filtre) {
-        return dashboard.construire(listeId, login, null, 0, filtre);
+    private VueRemboursement vue(String login) {
+        return remboursements.afficher(listeId, login, 0);
     }
 
-    private VueCadeau ligne(VueListe vue, Long id) {
-        return vue.cadeaux().stream().filter(c -> id.equals(c.id())).findFirst().orElseThrow();
+    private List<Long> idsListes(VueRemboursement vue) {
+        return vue.cadeaux().stream().map(VueRemboursement.Ligne::id).toList();
     }
 
     @Test
@@ -98,13 +100,10 @@ class RemboursementTest {
         Long sansPrix = cadeau("D", null, Statut.COMMANDE, false);
         Long tiers = cadeau("E", "40", Statut.COMMANDE, true);
 
-        VueListe vue = vue("alice", false);
+        VueRemboursement vue = vue("alice");
 
-        assertThat(ligne(vue, aAcheter).remboursable()).isFalse();
-        assertThat(ligne(vue, commande).remboursable()).isTrue();
-        assertThat(ligne(vue, recu).remboursable()).isTrue();
-        assertThat(ligne(vue, sansPrix).remboursable()).isFalse();
-        assertThat(ligne(vue, tiers).remboursable()).isFalse();
+        assertThat(idsListes(vue)).containsExactlyInAnyOrder(commande, recu)
+                .doesNotContain(aAcheter, sansPrix, tiers);
         assertThatThrownBy(() -> cadeauxService.basculerRemboursement(listeId, aAcheter, "alice"))
                 .isInstanceOf(RequeteInvalideException.class);
         assertThatThrownBy(() -> cadeauxService.basculerRemboursement(listeId, tiers, "alice"))
@@ -132,14 +131,14 @@ class RemboursementTest {
         cadeau("C", "99", Statut.A_ACHETER, false);
         cadeau("D", "50", Statut.COMMANDE, true);
 
-        VueListe avant = vue("alice", false);
+        VueRemboursement avant = vue("alice");
         assertThat(avant.aRembourser()).isEqualByComparingTo("35.50");
         assertThat(avant.rembourse()).isEqualByComparingTo("0");
         assertThat(avant.aujourdhui()).isEqualTo(dateDuJour.aujourdhui());
 
         cadeauxService.basculerRemboursement(listeId, a, "alice");
 
-        VueListe apres = vue("alice", false);
+        VueRemboursement apres = vue("alice");
         assertThat(apres.aRembourser()).isEqualByComparingTo("10");
         assertThat(apres.rembourse()).isEqualByComparingTo("25.50");
     }
@@ -163,7 +162,7 @@ class RemboursementTest {
         assertThat(rembourseLe(deja)).isEqualTo(dateDuJour.aujourdhui());
         assertThat(rembourseLe(aAcheter)).isNull();
         assertThat(rembourseLe(tiers)).isNull();
-        assertThat(vue("alice", false).aRembourser()).isEqualByComparingTo("0");
+        assertThat(vue("alice").aRembourser()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -299,7 +298,7 @@ class RemboursementTest {
             cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER);
         }
 
-        VueListe vue = vue("alice", false);
+        VueRemboursement vue = vue("alice");
         assertThat(vue.alertes()).hasSize(AlerteRemboursementService.TAILLE);
         assertThat(vue.totalAlertes()).isEqualTo(AlerteRemboursementService.TAILLE + 3);
         assertThat(vue.alertes().get(0).cadeauNom()).isEqualTo("Cadeau " + (AlerteRemboursementService.TAILLE + 2));
@@ -308,49 +307,91 @@ class RemboursementTest {
         alertesService.fermer(listeId, premiere, "alice");
         alertesService.fermer(listeId, premiere, "alice");
 
-        assertThat(vue("alice", false).totalAlertes()).isEqualTo(AlerteRemboursementService.TAILLE + 2);
+        assertThat(vue("alice").totalAlertes()).isEqualTo(AlerteRemboursementService.TAILLE + 2);
     }
 
     @Test
-    void leFiltreARembourserListeSeulementLesCadeauxARembourserAvecEtSansTag() {
-        Long tag = tags.saveAndFlush(new com.alexgit95.lutin.domain.Tag(
-                "noel", listes.findById(listeId).orElseThrow())).getId();
-        Long avecTag = cadeauxService.creer(listeId, "alice", new CadeauCommande("T", null, new BigDecimal("10"),
-                mamanId, false, false, Set.of(tag))).getId();
-        cadeauxService.changerStatut(listeId, avecTag, "alice", Statut.COMMANDE);
-        Long sansTag = cadeau("S", "20", Statut.COMMANDE, false);
-        Long rembourse = cadeau("R", "30", Statut.COMMANDE, false);
+    void lOngletListeLesNonRembourseEnPremierPuisLesRemboursesParPersonneEtNom() {
+        Long lea = personnesService.creer(listeId, "alice", "Lea", BigDecimal.ZERO).getId();
+        Long rembourse = cadeau("A rembourse", "30", Statut.COMMANDE, false);
+        Long b = cadeau("B", "20", Statut.COMMANDE, false);
+        Long a = cadeau("A", "10", Statut.LIVRE, false);
+        Long deLea = cadeauxService.creer(listeId, "alice", new CadeauCommande("Z de Lea", null,
+                new BigDecimal("5"), lea, false, false, Set.of())).getId();
+        cadeauxService.changerStatut(listeId, deLea, "alice", Statut.COMMANDE);
         cadeau("N", "40", Statut.A_ACHETER, false);
         cadeauxService.basculerRemboursement(listeId, rembourse, "alice");
 
-        VueListe filtre = vue("alice", true);
-        assertThat(filtre.filtreARembourser()).isTrue();
-        assertThat(filtre.cadeaux()).extracting(VueCadeau::id).containsExactlyInAnyOrder(avecTag, sansTag);
+        VueRemboursement vue = vue("alice");
 
-        VueListe filtreTag = dashboard.construire(listeId, "alice", tag, 0, true);
-        assertThat(filtreTag.cadeaux()).extracting(VueCadeau::id).containsExactly(avecTag);
+        assertThat(idsListes(vue)).containsExactly(deLea, a, b, rembourse);
+        assertThat(vue.cadeaux().get(3).rembourseLe()).isNotNull();
+        assertThat(vue.cadeaux().get(0).rembourseLe()).isNull();
     }
 
     @Test
-    void unLecteurNeRecoitAucuneDonneeDeRemboursementEtLeFiltreEstIgnore() {
-        Long id = cadeau("A", "10", Statut.COMMANDE, false);
-        cadeau("B", "20", Statut.A_ACHETER, false);
+    void lOngletEstPagineParLotsDe50() {
+        for (int i = 0; i < RemboursementService.TAILLE_PAGE + 5; i++) {
+            cadeau(String.format("Cadeau %03d", i), "1", Statut.COMMANDE, false);
+        }
+
+        VueRemboursement premiere = remboursements.afficher(listeId, "alice", 0);
+        VueRemboursement seconde = remboursements.afficher(listeId, "alice", 1);
+
+        assertThat(premiere.cadeaux()).hasSize(RemboursementService.TAILLE_PAGE);
+        assertThat(premiere.totalPages()).isEqualTo(2);
+        assertThat(seconde.cadeaux()).hasSize(5);
+        assertThat(idsListes(premiere)).doesNotContainAnyElementsOf(idsListes(seconde));
+    }
+
+    @Test
+    void laLigneEtLaCarteSontDisponiblesPourLeCochage() {
+        Long id = cadeau("A", "25", Statut.COMMANDE, false);
         cadeauxService.basculerRemboursement(listeId, id, "alice");
-        Long autre = cadeau("C", "30", Statut.COMMANDE, false);
-        cadeauxService.basculerRemboursement(listeId, autre, "alice");
-        cadeauxService.changerStatut(listeId, autre, "alice", Statut.A_ACHETER);
 
-        VueListe vue = vue("bob", true);
+        VueRemboursement.Ligne ligne = remboursements.ligne(listeId, id, "alice");
+        VueRemboursement carte = remboursements.carte(listeId, "alice");
 
-        assertThat(vue.filtreARembourser()).isFalse();
-        assertThat(vue.aRembourser()).isNull();
-        assertThat(vue.rembourse()).isNull();
-        assertThat(vue.aujourdhui()).isNull();
-        assertThat(vue.alertes()).isEmpty();
-        assertThat(vue.totalAlertes()).isZero();
-        assertThat(vue.cadeaux()).hasSize(3)
-                .allSatisfy(c -> assertThat(c.remboursable()).isFalse())
-                .allSatisfy(c -> assertThat(c.rembourseLe()).isNull());
+        assertThat(ligne.rembourseLe()).matches("\\d{2}/\\d{2}");
+        assertThat(carte.cadeaux()).isEmpty();
+        assertThat(carte.rembourse()).isEqualByComparingTo("25");
+    }
+
+    @Test
+    void leDashboardNePorteAucuneDonneeDeRemboursement() {
+        Long id = cadeau("A", "10", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, id, "alice");
+        cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER);
+
+        VueListe vue = dashboard.construire(listeId, "alice", null, 0);
+
+        assertThat(vue.cadeaux()).hasSize(1);
+        assertThat(VueListe.class.getRecordComponents()).extracting(c -> c.getName())
+                .doesNotContain("aRembourser", "rembourse", "alertes", "totalAlertes", "filtreARembourser");
+    }
+
+    @Test
+    void leBadgeCompteLesAlertesPourLeProprietaireSeulement() {
+        Long id = cadeau("A", "10", Statut.COMMANDE, false);
+        cadeauxService.basculerRemboursement(listeId, id, "alice");
+        cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER);
+
+        assertThat(alertesService.compter(listeId, "alice")).isEqualTo(1);
+        assertThat(alertesService.compter(listeId, "bob")).isZero();
+        assertThat(alertesService.compter(listeId, "carol")).isZero();
+        assertThat(alertesService.compter(listeId + 999, "alice")).isZero();
+    }
+
+    @Test
+    void unLecteurOuUnEtrangerNePeutPasOuvrirLOnglet() {
+        cadeau("A", "10", Statut.COMMANDE, false);
+
+        for (String intrus : new String[]{"bob", "carol"}) {
+            assertThatThrownBy(() -> remboursements.afficher(listeId, intrus, 0))
+                    .isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> remboursements.carte(listeId, intrus))
+                    .isInstanceOf(AccessDeniedException.class);
+        }
     }
 
     @Test

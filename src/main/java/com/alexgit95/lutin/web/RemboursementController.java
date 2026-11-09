@@ -2,9 +2,12 @@ package com.alexgit95.lutin.web;
 
 import com.alexgit95.lutin.service.AlerteRemboursementService;
 import com.alexgit95.lutin.service.CadeauService;
+import com.alexgit95.lutin.service.RemboursementService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,10 +26,21 @@ public class RemboursementController {
 
     private final CadeauService cadeaux;
     private final AlerteRemboursementService alertes;
+    private final RemboursementService remboursements;
 
-    public RemboursementController(CadeauService cadeaux, AlerteRemboursementService alertes) {
+    public RemboursementController(CadeauService cadeaux, AlerteRemboursementService alertes,
+                                   RemboursementService remboursements) {
         this.cadeaux = cadeaux;
         this.alertes = alertes;
+        this.remboursements = remboursements;
+    }
+
+    /** Onglet Remboursement : propriétaire seulement (403 sinon). */
+    @GetMapping("/remboursements")
+    public String onglet(@PathVariable Long listeId, @RequestParam(defaultValue = "0") int page,
+                         Principal principal, Model model) {
+        model.addAttribute("vue", remboursements.afficher(listeId, principal.getName(), page));
+        return "remboursement";
     }
 
     @PostMapping("/remboursements")
@@ -39,13 +53,13 @@ public class RemboursementController {
         } catch (RequeteInvalideException e) {
             flash.addFlashAttribute("erreur", e.getMessage());
         }
-        return "redirect:/listes/" + listeId;
+        return "redirect:/listes/" + listeId + "/remboursements";
     }
 
     @PostMapping("/alertes/{alerteId}/fermer")
     public String fermerAlerte(@PathVariable Long listeId, @PathVariable Long alerteId, Principal principal) {
         alertes.fermer(listeId, alerteId, principal.getName());
-        return "redirect:/listes/" + listeId;
+        return "redirect:/listes/" + listeId + "/remboursements";
     }
 
     private static String compteRendu(CadeauService.ResultatRemboursement r) {

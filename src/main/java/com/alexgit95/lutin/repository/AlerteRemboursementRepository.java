@@ -16,6 +16,8 @@ public interface AlerteRemboursementRepository extends JpaRepository<AlerteRembo
 
     long countByListeId(Long listeId);
 
+    long countByListeIdAndListeProprietaireLogin(Long listeId, String login);
+
     Optional<AlerteRemboursement> findByIdAndListeId(Long id, Long listeId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
