@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${titre} + ' - Lutin'">Lutin</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
-    <link rel="manifest" th:href="@{/manifest.webmanifest}">
+    <link rel="manifest" th:href="@{/manifest.webmanifest}" crossorigin="use-credentials">
     <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png}">
     <meta name="theme-color" content="#5a55e8">
     <script th:src="@{/js/htmx.min.js}" defer></script>
@@ -26,6 +26,7 @@
 <nav class="onglets" th:fragment="onglets(listeId, actif, lecteur)">
     <a th:href="@{/listes/{id}(id=${listeId})}" th:classappend="${actif == 'dashboard'} ? 'actif'">Dashboard</a>
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/personnes(id=${listeId})}" th:classappend="${actif == 'personnes'} ? 'actif'">Personnes</a>
+    <a th:unless="${lecteur}" th:href="@{/listes/{id}/remboursements(id=${listeId})}" th:classappend="${actif == 'remboursement'} ? 'actif'">Remboursement<span th:replace="~{fragments :: badgeRemboursement(${alertesRemboursement}, false)}"></span></a>
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/partages(id=${listeId})}" th:classappend="${actif == 'partages'} ? 'actif'">Partage</a>
     <a th:unless="${lecteur}" th:href="@{/listes/{id}/reglages(id=${listeId})}" th:classappend="${actif == 'reglages'} ? 'actif'">Réglages</a>
 </nav>
@@ -38,6 +39,9 @@
     <p class="erreur bandeau" th:if="${erreur}" th:text="${erreur}"></p>
     <p class="info" th:if="${info}" th:text="${info}"></p>
 </div>
+<span th:fragment="badgeRemboursement(nombre, oob)" id="badge-remboursement" class="badge"
+      th:hidden="${nombre == null or nombre == 0}" th:text="${nombre}"
+      th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">0</span>
 <span th:fragment="montant(valeur)" th:text="${valeur == null ? '—' : #numbers.formatDecimal(valeur, 1, 'WHITESPACE', 2, 'COMMA') + ' €'}"></span>
 </body>
 </html>

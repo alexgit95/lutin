@@ -225,6 +225,24 @@ class WishlistPubliqueTest {
     // --- Libération ---
 
     @Test
+    void unInviteLibereSansConfirmationUnArticlePrisPourUnTiers() {
+        souhaitService.prendrePour(wishlistId, souhaitId, "bob", "Marie");
+        assertThat(preneurVu()).isEqualTo("Marie (via bob)");
+
+        assertThat(publique.liberer(jeton, null, souhaitId, false).libere()).isTrue();
+        assertThat(preneurVu()).isNull();
+        assertThat(souhaits.findAll().get(0).getPrisViaLogin()).isNull();
+    }
+
+    @Test
+    void unCompteConnecteLiberesansConfirmationUnArticlePrisPourUnTiers() {
+        souhaitService.prendrePour(wishlistId, souhaitId, "bob", "Marie");
+
+        assertThat(publique.liberer(jeton, "dave", souhaitId, false).libere()).isTrue();
+        assertThat(preneurVu()).isNull();
+    }
+
+    @Test
     void unInviteDoitToujoursConfirmerLaLiberation() {
         publique.prendre(jeton, null, souhaitId, "Marie");
 

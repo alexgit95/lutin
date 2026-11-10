@@ -19,6 +19,7 @@ import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,6 +53,10 @@ public class Cadeau {
     @Column(name = "pour_tiers", nullable = false)
     private boolean pourTiers;
 
+    // Facultative : nul = non remboursé. Jamais exposée à un lecteur.
+    @Column(name = "rembourse_le")
+    private LocalDate rembourseLe;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "personne_id", nullable = false)
     private Personne personne;
@@ -66,4 +71,9 @@ public class Cadeau {
             joinColumns = @JoinColumn(name = "cadeau_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<Tag> tags = new HashSet<>();
+
+    /** Même règle que « Déjà déboursé » : l'argent a quitté le compte courant. */
+    public boolean estRemboursable() {
+        return !pourTiers && prix != null && statut != Statut.A_ACHETER;
+    }
 }

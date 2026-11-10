@@ -1,6 +1,7 @@
 package com.alexgit95.lutin.service;
 
 import com.alexgit95.lutin.config.LutinProperties;
+import com.alexgit95.lutin.config.ModeLocal;
 import com.alexgit95.lutin.domain.Utilisateur;
 import com.alexgit95.lutin.repository.UtilisateurRepository;
 import org.springframework.dao.DataAccessException;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 @Service
+@ModeLocal
 public class RegistrationService {
 
     private final UtilisateurRepository utilisateurs;

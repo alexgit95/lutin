@@ -28,17 +28,22 @@
             <span class="ruban-pris" th:if="${s.prisPar() != null}">&#10003; Pris par <b th:text="${s.prisPar()}">bob</b></span>
             <div class="tuile-visuel" th:classappend="'teinte-' + ${s.id() % 6}" th:text="${s.initiale()}" aria-hidden="true">A</div>
             <div class="tuile-corps">
-                <h3 class="tuile-titre" th:text="${s.nom()}">Article</h3>
+                <h3 class="tuile-titre">
+                    <a class="tuile-lien" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer" th:text="${s.nom()}">Article</a>
+                    <span th:unless="${s.url() != null}" th:text="${s.nom()}">Article</span>
+                </h3>
                 <span class="tuile-hote" th:if="${s.hote() != null}" th:text="${s.hote()}">exemple.fr</span>
                 <div class="tuile-prix" th:if="${s.prix() != null}"><span th:replace="~{fragments :: montant(${s.prix()})}"></span></div>
             </div>
             <div class="tuile-pied">
-                <a class="bouton clair" th:if="${s.url() != null}" th:href="${s.url()}" target="_blank" rel="noopener noreferrer">Voir</a>
+                <button type="button" class="bouton clair" th:if="${s.url() != null}" data-copier th:attr="data-lien=${s.url()}">Copier</button>
                 <form th:if="${s.prisPar() == null}" method="post"
                       th:action="@{/wishlists/{id}/souhaits/{sid}/pris(id=${vue.id()},sid=${s.id()})}">
                     <input type="hidden" name="page" th:value="${vue.page()}">
                     <button type="submit">Je le prends</button>
                 </form>
+                <button type="button" class="clair" th:if="${s.prisPar() == null}"
+                        th:attr="data-prendre-pour-url=@{/wishlists/{id}/souhaits/{sid}/pris-pour(id=${vue.id()},sid=${s.id()})}">De la part de&hellip;</button>
                 <form th:if="${s.prisPar() != null}" method="post"
                       th:action="@{/wishlists/{id}/souhaits/{sid}/libere(id=${vue.id()},sid=${s.id()})}">
                     <input type="hidden" name="page" th:value="${vue.page()}">
@@ -53,6 +58,21 @@
         <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 2</span>
         <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/wishlists/{id}(id=${vue.id()},page=${vue.page() + 1})}">Suivant &raquo;</a>
     </div>
+
+    <dialog id="dialogue-pour" class="dialogue">
+        <form id="formulaire-pour" method="post" th:action="@{/wishlists/{id}(id=${vue.id()})}">
+            <h2>De la part de</h2>
+            <p>Indiquez le nom de la personne de la part de qui vous prenez cet article.</p>
+            <label>Nom
+                <input type="text" name="nom" maxlength="100" required autocomplete="off">
+            </label>
+            <input type="hidden" name="page" th:value="${vue.page()}">
+            <div class="ligne">
+                <button type="submit">Valider</button>
+                <button type="button" class="clair" data-fermer-dialogue>Annuler</button>
+            </div>
+        </form>
+    </dialog>
 </main>
 </body>
 </html>

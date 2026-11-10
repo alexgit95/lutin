@@ -2,6 +2,136 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.13.0] - 2026-11-10
+
+### Added
+- **Prise « de la part de… »** : sur la vue d'une wishlist partagée, un second bouton à côté de « Je le prends » ouvre une popup de saisie du nom d'un tiers (obligatoire, nettoyé des caractères de contrôle, 100 caractères maximum, sans préremplissage ni mémorisation dans le navigateur). L'article est affiché « Pris par Marie (via bob) ».
+  - `POST /wishlists/{id}/souhaits/{sid}/pris-pour` (`SouhaitController`, MVC HTML, CSRF actif) ; `SouhaitService.prendrePour` vérifie les droits de lecteur côté serveur (propriétaire et non-lecteurs : 403) et la prise reste atomique.
+  - Nouvelle colonne nullable `souhait.pris_via_login` (login du lecteur auteur de la prise), compatible SQLite et PostgreSQL, documentée dans `docs/database.puml`.
+- Tests : 18 nouveaux tests (service, lien public, web, transfert). Total de la suite : 352.
+
+### Changed
+- Un article pris pour un tiers se libère sans avertissement ni confirmation par tout lecteur ou visiteur, invités du lien public compris (`SouhaitService.confirmationRequise` reçoit un indicateur « pris pour un tiers »).
+- La validation du nom saisi est mutualisée dans `SouhaitService.nomSaisi` (réutilisée par la wishlist publique, comportement inchangé).
+- Format d'export passé en version 2 (colonne `pris_via_login`) : un fichier exporté par la version précédente est refusé à l'import avec le message de version incompatible.
+- Les avis au lecteur nomment uniquement le tiers (sans mention « via »). La vue du propriétaire reste aveugle.
+- Version du `pom.xml` portée à 0.13.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée. Une colonne nullable est ajoutée par Hibernate (`ddl-auto`) sans migration.
+
+### Fixed
+- Aucun.
+
+## [0.12.0] - 2026-11-09
+
+### Added
+- **Sauvegarde et restauration de la base** depuis l'écran `/admin` (administrateur seulement, CSRF, dans les deux modes) :
+  - `POST /admin/export` : fichier JSON `lutin-export-AAAA-MM-JJ.json` (`Cache-Control: no-store`) contenant les 12 tables, écrit en flux par lots de 500 lignes (`ExportService`) avec un en-tête (format `lutin-export`, version de format 1, mode d'accès, version de l'application, date).
+  - `POST /admin/import` (multipart) : remplacement total en une transaction (`ImportService`) après une première passe de validation sans écriture (format, version, mode, tables et colonnes, types, longueurs, énumérations, références, identifiants uniques, JSON complet). Identifiants conservés, séquences PostgreSQL recalées, jetons des liens publics et hachés restaurés.
+  - Garde-fous : le compte de l'administrateur courant doit figurer dans le fichier avec le rôle administrateur (login en `local`, empreinte d'email en `cloudflare`), confirmation « IMPORTER », un seul import à la fois (409), fichier d'un autre mode ou d'une autre version refusé, taille limitée à 100 Mo avec message lisible (`TransfertAdvice`).
+  - Descripteurs de tables explicites (`Tables`) et test de conformité au modèle JPA : une colonne ajoutée à une entité sans mise à jour des descripteurs fait échouer le test.
+- Tests : `TransfertTest` (15), `TransfertCloudflareTest` (6), `AdminTransfertWebTest` (6), `TablesConformiteTest` (3), `LimiteEnvoiTest` (2). Total de la suite : 334.
+
+### Changed
+- L'écran `/admin` affiche la section de sauvegarde dans les deux modes ; le message « aucune fonction d'administration » disparaît en mode `cloudflare`.
+- `spring.servlet.multipart.max-file-size` et `max-request-size` portés à 100 Mo (ils étaient à 1 Mo par défaut).
+- Version du `pom.xml` portée à 0.12.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée ; aucune modification du schéma de données.
+
+### Fixed
+- Aucun.
+
+## [0.11.0] - 2026-11-09
+
+### Added
+- Onglet **« Remboursement »** (`GET /listes/{id}/remboursements`, propriétaire seulement, 403 sinon) : alertes « virement en trop », carte « À virer » avec « Tout marquer remboursé », et liste paginée (50) des cadeaux remboursables avec leur pastille, les non remboursés d'abord puis par personne, nom et identifiant (`CadeauRepository.findRemboursables`, `RemboursementService`, `VueRemboursement`).
+- Badge d'alertes sur l'onglet, calculé pour les pages GET d'une liste du propriétaire (`LayoutAdvice`, `AlerteRemboursementService.compter`) et rafraîchi en `hx-swap-oob` après un changement de statut sur le dashboard.
+- Tests : `RemboursementTest` et `RemboursementWebTest` adaptés à l'onglet (ordre, pagination, badge, droits, dashboard sans donnée de remboursement). Total de la suite : 302.
+
+### Changed
+- Le **dashboard** ne porte plus ni carte, ni alertes, ni pastille, ni filtre « À rembourser » : tous les cadeaux, leurs statuts modifiables, le filtre par tag et la barre de workflow. `VueListe`, `VueCadeau` et `LotCadeaux` perdent les champs de remboursement ; la réponse d'un changement de statut ne renvoie plus que la ligne, la barre de workflow et le badge.
+- Le cochage d'une pastille, le remboursement groupé et la fermeture d'une alerte ramènent sur l'onglet (cochage sans HTMX : `?page=` conservé).
+- Version du `pom.xml` portée à 0.11.0.
+
+### Removed
+- Filtre « À rembourser » et paramètre `aRembourser` (ignoré s'il est fourni) du dashboard et du chargement continu.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée ; aucune modification du schéma de données.
+
+### Fixed
+- Aucun.
+
+## [0.10.0] - 2026-11-09
+
+### Added
+- Wishlists : un clic sur la tuile d'un article qui a une URL l'ouvre dans un nouvel onglet (lien étiré sur le titre, `target="_blank"`, `rel="noopener noreferrer"`), et un bouton « Copier » copie l'URL dans le presse-papiers (« Lien copié »). Valable pour le propriétaire, les lecteurs et la page publique `/p/{jeton}` ; une tuile sans URL n'est ni cliquable ni copiable.
+- Écran « Modifier l'article » : bouton « Supprimer l'article » avec confirmation (absent de l'écran d'ajout).
+- Tests : `WishlistTuilesWebTest` (6). Total de la suite : 295.
+
+### Changed
+- Le bouton « Voir » est retiré des tuiles, et « Supprimer » quitte la tuile du propriétaire (« Modifier » est conservé). Aucun changement de route, de droit, de schéma ni d'avis aux lecteurs.
+- Version du `pom.xml` portée à 0.10.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée.
+
+### Fixed
+- Aucun.
+
+## [0.9.0] - 2026-11-09
+
+### Added
+- Authentification par **Cloudflare Access** en prod (`lutin.acces.mode=cloudflare`, activé par `application-prod.properties`) : `CloudflareAccessFilter` valide à chaque requête le jeton `Cf-Access-Jwt-Assertion` (signature par la JWKS du team, émetteur, audience, expiration, présence d'un email) sans rien enregistrer en session ; sans jeton valide, 401. Chemins publics (`/p/**`, statiques, `/manifest.webmanifest`, `/sw.js`, `/error`) servis sans jeton, avec authentification facultative.
+- Identité : `utilisateur.email_hmac` (HMAC-SHA256 de l'email normalisé, `EmailHmacService`), `login_cle` (pseudo en minuscules, unique) ; l'email n'est jamais stocké, affiché ni journalisé. `AccesAuthentication.getName()` renvoie le pseudo.
+- Page `/bienvenue` et `PseudoService` : choix du pseudo à la première connexion (4 à 50 caractères `[A-Za-z0-9._-]`, unique sans casse, réservés `admin`, `administrateur`, `root`, `lutin`, `system`, `support`, immuable, création idempotente). Le premier compte créé est administrateur, y compris en cas de créations simultanées.
+- Déconnexion vers `https://<team>/cdn-cgi/access/logout`, bannière d'erreur visible pour les requêtes HTMX en échec (code de statut, session expirée, connexion impossible), `crossorigin="use-credentials"` sur le manifest.
+- Configuration prod obligatoire : `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `EMAIL_HMAC_SECRET` (32 caractères minimum) ; démarrage refusé sinon. Dépendance `spring-security-oauth2-jose`.
+- Tests : `EmailHmacServiceTest` (5), `CloudflareAccessConfigTest` (9), `JetonCloudflareTest` (7), `PseudoServiceTest` (10), `AccesCloudflareWebTest` (17). Total de la suite : 289.
+
+### Changed
+- `SecurityConfig` ne porte plus que la chaîne du mode local (`@ModeLocal`) ; `AuthController` et `RegistrationService` ne sont actifs qu'en mode local (`/login` et `/register` répondent 404 en prod).
+- `utilisateur.password_hash` devient facultatif ; `docs/database.puml` mis à jour.
+- `/admin` reste réservé à l'administrateur : clé d'invitation en dev, message neutre en prod. `INVITATION_KEY` n'est plus exigé en prod (`docker-compose.yml`, `application-prod.properties`).
+- **BREAKING** : aucun compte existant n'est repris ; recréer la base de prod (volume PostgreSQL) et `lutin-dev.db`.
+- Version du `pom.xml` portée à 0.9.0.
+
+### Variables d'environnement
+- **À définir en prod (obligatoires, démarrage refusé sinon)** :
+  - `CF_ACCESS_TEAM_DOMAIN` : domaine du team Cloudflare Access, par exemple `monteam.cloudflareaccess.com` (sans `https://`).
+  - `CF_ACCESS_AUD` : audience (AUD tag) de l'application Access.
+  - `EMAIL_HMAC_SECRET` : secret de hachage des emails, 32 caractères minimum, à sauvegarder (le changer ou le perdre empêche de reconnaître les comptes).
+- **N'est plus obligatoire en prod** : `INVITATION_KEY` (sans effet en prod ; reste facultative en dev, défaut `lutin-dev`). `docker-compose.yml` ne l'exige plus.
+- **Inchangées** : `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `APP_PORT`.
+- Aucune variable nouvelle en dev local.
+- À définir sur le serveur qui exécute le conteneur avant la mise en production (la GitHub Action ne fait que publier l'image) ; `docker-compose.yml` les transmet au conteneur.
+
+### Fixed
+- Aucun.
+
+## [0.8.0] - 2026-11-09
+
+### Added
+- Remboursement des cadeaux (propriétaire seulement) : colonne `cadeau.rembourse_le` (nullable) et pastille par cadeau « € à rembourser » / « remboursé le jj/MM » (`POST /listes/{id}/cadeaux/{cid}/rembourse`, HTMX ou redirection). Un cadeau est remboursable s'il est Commandé ou plus, avec un prix, et pas « pour un tiers » ; sinon la requête est refusée.
+- Carte « À rembourser » : montants à rembourser et déjà remboursés (`CadeauRepository.sommeARembourser` et `sommeRembourse`), « À virer : X € » et bouton « Tout marquer remboursé » (`POST /listes/{id}/remboursements`) avec date préremplie, refus d'une date future, mise à jour groupée limitée aux cadeaux éligibles et compte rendu (nombre et somme).
+- Filtre « À rembourser » (paramètre `aRembourser`, avec ou sans tag, propagé au chargement continu) ; ignoré pour un lecteur.
+- Entité `AlerteRemboursement` (table `alerte_remboursement`), `AlerteRemboursementService` et `POST /listes/{id}/alertes/{aid}/fermer` : alerte « virement en trop » quand un cadeau remboursé repasse à « À acheter », est supprimé, devient « pour un tiers » ou voit sa personne supprimée. Elle persiste jusqu'à fermeture (20 plus récentes et total) et est supprimée avec la liste.
+- `DateDuJour` : date du jour dans le fuseau `lutin.fuseau-horaire` (défaut `Europe/Paris`).
+- `docs/database.puml` mis à jour.
+- Tests : `RemboursementTest` (19) et `RemboursementWebTest` (12). Total de la suite : 241.
+
+### Changed
+- Le prix d'un cadeau remboursé est verrouillé (refus serveur et champ en lecture seule dans le formulaire) ; la date n'est pas touchée par les autres modifications.
+- Le Déboursé et le Reste à payer du dashboard sont inchangés par le remboursement.
+- Aucune donnée de remboursement n'est envoyée à un lecteur (page, lots, réponses HTMX).
+- Version du `pom.xml` portée à 0.8.0.
+
+### Fixed
+- Aucun.
+
 ## [0.7.0] - 2026-11-06
 
 ### Added

@@ -2,6 +2,7 @@ package com.alexgit95.lutin.service;
 
 import com.alexgit95.lutin.domain.ListeAchat;
 import com.alexgit95.lutin.domain.Utilisateur;
+import com.alexgit95.lutin.repository.AlerteRemboursementRepository;
 import com.alexgit95.lutin.repository.CadeauRepository;
 import com.alexgit95.lutin.repository.ListeAchatRepository;
 import com.alexgit95.lutin.repository.PartageRepository;
@@ -27,10 +28,12 @@ public class ListeAchatService {
     private final PersonneRepository personnes;
     private final TagRepository tags;
     private final AccesListeService acces;
+    private final AlerteRemboursementRepository alertes;
 
     public ListeAchatService(ListeAchatRepository listes, UtilisateurRepository utilisateurs,
                              PartageRepository partages, CadeauRepository cadeaux,
-                             PersonneRepository personnes, TagRepository tags, AccesListeService acces) {
+                             PersonneRepository personnes, TagRepository tags, AccesListeService acces,
+                             AlerteRemboursementRepository alertes) {
         this.listes = listes;
         this.utilisateurs = utilisateurs;
         this.partages = partages;
@@ -38,6 +41,7 @@ public class ListeAchatService {
         this.personnes = personnes;
         this.tags = tags;
         this.acces = acces;
+        this.alertes = alertes;
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +75,7 @@ public class ListeAchatService {
     public void supprimer(Long listeId, String login) {
         ListeAchat liste = acces.proprietaire(listeId, login);
         cadeaux.deleteByListeId(listeId);
+        alertes.supprimerDeLaListe(listeId);
         partages.deleteByListeId(listeId);
         tags.deleteByListeId(listeId);
         personnes.deleteByListeId(listeId);

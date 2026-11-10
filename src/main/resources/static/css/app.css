@@ -188,3 +188,29 @@ tr.masque td { color: #777; }
 .personne-ligne.depasse .seg-depense { background: #c0392b; }
 .personne-ligne.depasse .seg-reste { background: #e8a39b; }
 .depassement { margin-left: .4rem; color: #c0392b; font-weight: 600; }
+
+.statut-form + .remb-form { margin-top: .3rem; }
+.remb-form { display: block; margin: 0; }
+button.pastille-remb { border-radius: 999px; padding: .2rem .65rem; font-size: .75rem; background: #fff0d9; color: #8a5a00; border: 1px dashed #d9a441; }
+button.pastille-remb.ok { background: #dcf7e6; color: #1d6b3c; border: 1px solid #7cc79a; }
+.carte-remboursement .remb-montants { margin: 0 0 .75rem; }
+.carte-remboursement form.ligne { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.carte-remboursement input[type=date] { width: auto; margin: 0; }
+.alerte-remb { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; background: #fdecea; color: #8c2b21; border-left: 4px solid #c0392b; border-radius: 10px; padding: .75rem 1rem; margin-bottom: .75rem; }
+
+.bandeau-erreur { position: sticky; top: 0; z-index: 20; display: flex; gap: .75rem; align-items: center; justify-content: space-between; padding: .6rem 1rem; background: #c0392b; color: #fff; font-size: .9rem; }
+.bandeau-erreur button { margin: 0; padding: .25rem .7rem; background: #fff; color: #c0392b; }
+
+.tuile-lien { color: inherit; text-decoration: none; }
+.tuile-lien::after { content: ""; position: absolute; inset: 0; border-radius: 20px; }
+.tuile-lien:hover { text-decoration: underline; }
+.tuile-lien:focus-visible::after { outline: 3px solid var(--accent); outline-offset: -3px; }
+.tuile-pied { position: relative; z-index: 1; }
+form.suppression-souhait { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bord); }
+
+.badge[hidden] { display: none; }
+.onglets .badge { margin-left: .3rem; padding: .1rem .5rem; background: #c0392b; color: #fff; }
+
+.sauvegarde { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bord); }
+.sauvegarde .avertissement { padding: .6rem .8rem; border-radius: 8px; background: #fff0d9; color: #8a5a00; font-size: .9rem; }
+.sauvegarde button.danger { background: #c0392b; color: #fff; }

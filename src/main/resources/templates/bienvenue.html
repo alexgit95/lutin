@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Bienvenue')}"></head>
+<body class="auth">
+<main class="card">
+    <h1>Bienvenue</h1>
+    <p>Choisissez votre pseudo : c'est le nom que les autres verront. Il ne pourra plus être modifié.</p>
+    <p class="erreur" th:if="${erreur}" th:text="${erreur}"></p>
+    <form th:action="@{/bienvenue}" method="post">
+        <label>Pseudo
+            <input type="text" name="pseudo" th:value="${pseudo}" required minlength="4" maxlength="50"
+                   pattern="[A-Za-z0-9._\-]{4,50}" autofocus autocomplete="off">
+        </label>
+        <button type="submit">Continuer</button>
+    </form>
+    <form th:action="@{/logout}" method="post">
+        <button type="submit" class="clair">Se déconnecter</button>
+    </form>
+</main>
+</body>
+</html>

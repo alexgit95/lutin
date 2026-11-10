@@ -88,6 +88,8 @@ class WishlistPubliqueWebTest {
                 .andExpect(content().string(containsString("Anniversaire")))
                 .andExpect(content().string(containsString("Casque audio")))
                 .andExpect(content().string(containsString("dialogue-nom")))
+                .andExpect(content().string(not(containsString("De la part de"))))
+                .andExpect(content().string(not(containsString("/pris-pour"))))
                 .andExpect(content().string(not(containsString("alice"))))
                 .andExpect(content().string(not(containsString("Avis"))))
                 .andExpect(content().string(not(containsString("/souhaits/nouveau"))));
@@ -181,7 +183,8 @@ class WishlistPubliqueWebTest {
     void unAutreCompteConnectePrendSousSonLoginSansPopup() throws Exception {
         mvc.perform(get(url("")).with(user("dave"))).andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("dialogue-nom"))))
-                .andExpect(content().string(not(containsString("data-prendre-url"))));
+                .andExpect(content().string(not(containsString("data-prendre-url"))))
+                .andExpect(content().string(not(containsString("De la part de"))));
 
         mvc.perform(post(url("/souhaits/" + souhaitId + "/pris")).with(user("dave")).with(csrf()))
                 .andExpect(status().is3xxRedirection());

@@ -1,5 +1,6 @@
 package com.alexgit95.lutin.web;
 
+import com.alexgit95.lutin.config.ModeLocal;
 import com.alexgit95.lutin.service.InscriptionException;
 import com.alexgit95.lutin.service.RegistrationService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
+@ModeLocal
 public class AuthController {
 
     private final RegistrationService registrationService;

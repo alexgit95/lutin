@@ -29,7 +29,7 @@ Le système SHALL permettre à un utilisateur connecté de créer, renommer et s
 - **THEN** la wishlist, ses articles et ses partages sont supprimés
 
 ### Requirement: Gestion des articles
-Le système SHALL permettre au propriétaire d'ajouter, modifier et supprimer les articles de sa wishlist. Le nom SHALL être obligatoire ; l'URL et le prix SHALL être facultatifs. Une URL fournie SHALL commencer par `http://` ou `https://`, un prix fourni SHALL être positif ou nul. Les articles SHALL être paginés et triés indépendamment de l'état « pris ».
+Le système SHALL permettre au propriétaire d'ajouter, modifier et supprimer les articles de sa wishlist. La suppression SHALL se faire depuis l'écran de modification de l'article, avec confirmation, et non depuis la tuile ; elle SHALL être absente de l'écran d'ajout. Le nom SHALL être obligatoire ; l'URL et le prix SHALL être facultatifs. Une URL fournie SHALL commencer par `http://` ou `https://`, un prix fourni SHALL être positif ou nul. Les articles SHALL être paginés et triés indépendamment de l'état « pris ».
 
 #### Scenario: Ajout minimal
 - **WHEN** le propriétaire ajoute un article avec un nom seul
@@ -47,9 +47,21 @@ Le système SHALL permettre au propriétaire d'ajouter, modifier et supprimer le
 - **WHEN** le propriétaire saisit une URL valide et demande le titre
 - **THEN** le nom est prérempli avec le titre de la page, via la récupération protégée contre la SSRF
 
-#### Scenario: Modification et suppression
-- **WHEN** le propriétaire modifie ou supprime un article
-- **THEN** la modification ou la suppression est appliquée
+#### Scenario: Modification
+- **WHEN** le propriétaire modifie un article
+- **THEN** la modification est appliquée
+
+#### Scenario: Suppression depuis l'écran de modification
+- **WHEN** le propriétaire ouvre l'écran de modification d'un article et confirme la suppression
+- **THEN** l'article est supprimé
+
+#### Scenario: Pas de suppression sur la tuile
+- **WHEN** le propriétaire consulte l'onglet Articles
+- **THEN** aucune tuile ne porte de bouton de suppression
+
+#### Scenario: Pas de suppression à l'ajout
+- **WHEN** le propriétaire ouvre l'écran d'ajout d'un article
+- **THEN** aucun bouton de suppression n'est affiché
 
 ### Requirement: Partage d'une wishlist
 Le système SHALL permettre au propriétaire de partager une wishlist avec un autre utilisateur choisi dans une liste déroulante des logins existants, et de retirer ce partage. Seul le propriétaire SHALL voir et gérer les partages. L'administrateur n'a aucun accès particulier aux wishlists d'autrui.
@@ -75,7 +87,7 @@ Le système SHALL permettre au propriétaire de partager une wishlist avec un au
 - **THEN** la requête est refusée (403)
 
 ### Requirement: Onglets et rendu de la wishlist
-Le système SHALL présenter au propriétaire sa wishlist en trois onglets (Articles, Partage, Réglages), la page Articles n'affichant que les articles. Les articles SHALL être rendus en tuiles. Pour un lecteur, une tuile d'article pris SHALL se distinguer visuellement d'une tuile libre et nommer le preneur ; le propriétaire SHALL recevoir un rendu identique pour tous les articles.
+Le système SHALL présenter au propriétaire sa wishlist en trois onglets (Articles, Partage, Réglages), la page Articles n'affichant que les articles. Les articles SHALL être rendus en tuiles. Pour un lecteur, une tuile d'article pris SHALL se distinguer visuellement d'une tuile libre et nommer le preneur ; le propriétaire SHALL recevoir un rendu identique pour tous les articles. Une tuile d'article qui a une URL SHALL ouvrir cette URL dans un nouvel onglet au clic, sans bouton « Voir », et SHALL porter un bouton « Copier » qui copie l'URL dans le presse-papiers. Une tuile sans URL SHALL n'être pas cliquable et SHALL ne pas porter de bouton « Copier ». Ce comportement SHALL valoir pour le propriétaire, les lecteurs et la page publique.
 
 #### Scenario: Réglages dans un onglet dédié
 - **WHEN** le propriétaire ouvre l'onglet Articles
@@ -88,6 +100,26 @@ Le système SHALL présenter au propriétaire sa wishlist en trois onglets (Arti
 #### Scenario: Rendu propriétaire
 - **WHEN** le propriétaire consulte une wishlist contenant des articles pris
 - **THEN** toutes les tuiles ont le même rendu, sans ruban ni action de prise
+
+#### Scenario: Clic sur un article avec URL
+- **WHEN** un utilisateur clique sur la tuile d'un article qui a une URL
+- **THEN** l'URL s'ouvre dans un nouvel onglet avec `rel="noopener noreferrer"`
+
+#### Scenario: Plus de bouton Voir
+- **WHEN** une tuile est affichée au propriétaire, à un lecteur ou sur la page publique
+- **THEN** aucun bouton « Voir » n'est présent
+
+#### Scenario: Bouton Copier
+- **WHEN** un utilisateur clique « Copier » sur un article qui a une URL
+- **THEN** l'URL de l'article est copiée dans le presse-papiers et « Lien copié » est affiché
+
+#### Scenario: Article sans URL
+- **WHEN** un article n'a pas d'URL
+- **THEN** sa tuile n'est pas cliquable et ne porte pas de bouton « Copier »
+
+#### Scenario: Boutons de la tuile
+- **WHEN** le propriétaire clique « Modifier » ou un lecteur clique « Je le prends »
+- **THEN** l'action du bouton s'exécute et le lien de l'article ne s'ouvre pas
 
 ### Requirement: Consultation des wishlists
 Le système SHALL présenter à l'utilisateur ses wishlists et, séparément, celles qui lui sont partagées. Un lecteur SHALL ne pouvoir modifier ni la wishlist ni ses articles, uniquement cocher ou décocher « pris ».
@@ -119,8 +151,47 @@ Le système SHALL permettre à tout lecteur d'une wishlist de marquer un article
 - **WHEN** le propriétaire tente de cocher ou décocher un article
 - **THEN** la requête est refusée (403)
 
+### Requirement: Prise pour un tiers
+Le système SHALL permettre à un lecteur partagé connecté de prendre un article libre « de la part de » un tiers, depuis la vue de la wishlist partagée, via un bouton « De la part de… » placé à côté de « Je le prends ». Ce bouton SHALL ouvrir la même popup de saisie de nom que la wishlist publique, sans préremplissage. Le nom saisi SHALL être obligatoire, nettoyé des caractères de contrôle et limité à 100 caractères. Le système SHALL enregistrer le nom du tiers comme preneur et le login du lecteur connecté comme auteur de la prise, et SHALL afficher « Pris par <nom> (via <login>) ». Le bouton SHALL être absent de la wishlist publique et de la vue du propriétaire. Un article déjà pris SHALL NOT pouvoir être pris pour un tiers.
+
+#### Scenario: Prise pour un tiers
+- **WHEN** un lecteur partagé clique « De la part de… » sur un article libre, saisit « Bob » et valide
+- **THEN** l'article est « pris par » Bob via le login du lecteur et les lecteurs voient « Pris par Bob (via alice) »
+
+#### Scenario: Nom absent
+- **WHEN** le lecteur valide la popup avec un nom vide ou composé uniquement de blancs
+- **THEN** la prise est refusée avec le message « Votre nom est obligatoire » et l'article reste libre
+
+#### Scenario: Nom trop long
+- **WHEN** le lecteur saisit un nom de plus de 100 caractères
+- **THEN** la prise est refusée avec un message d'erreur et l'article reste libre
+
+#### Scenario: Popup sans préremplissage
+- **WHEN** le lecteur ouvre la popup « De la part de… »
+- **THEN** le champ du nom est vide, même si un nom d'invité a été mémorisé dans le navigateur
+
+#### Scenario: Article déjà pris
+- **WHEN** un lecteur tente de prendre pour un tiers un article déjà pris
+- **THEN** la prise est refusée et le message indique par qui l'article est pris
+
+#### Scenario: Prise concurrente
+- **WHEN** un lecteur prend un article pour un tiers au même moment qu'un autre lecteur le prend
+- **THEN** un seul réussit et l'autre reçoit un message indiquant par qui l'article est pris
+
+#### Scenario: Propriétaire et non-lecteur exclus
+- **WHEN** le propriétaire ou un utilisateur sans accès à la wishlist tente une prise pour un tiers
+- **THEN** la requête est refusée (403) et rien n'est modifié
+
+#### Scenario: Pas de bouton hors vue lecteur partagé
+- **WHEN** la wishlist est consultée par son propriétaire ou par le lien public
+- **THEN** aucun bouton « De la part de… » n'est présent
+
+#### Scenario: Avis
+- **WHEN** le propriétaire modifie ou supprime un article pris pour un tiers
+- **THEN** l'avis envoyé aux lecteurs nomme le tiers comme preneur, sans mention « via »
+
 ### Requirement: Décochage avec avertissement
-Le système SHALL permettre à tout lecteur ou visiteur de décocher un article pris. Le système SHALL afficher un avertissement important nommant le preneur et exiger une confirmation avant de libérer l'article, sauf si le visiteur est connecté, que son login est le nom du preneur et que le preneur n'est pas un invité.
+Le système SHALL permettre à tout lecteur ou visiteur de décocher un article pris. Le système SHALL afficher un avertissement important nommant le preneur et exiger une confirmation avant de libérer l'article, sauf si le visiteur est connecté, que son login est le nom du preneur et que le preneur n'est pas un invité, ou si l'article a été pris pour un tiers (prise « de la part de »). Un article pris pour un tiers SHALL pouvoir être libéré sans avertissement par tout lecteur ou visiteur, y compris un invité du lien public.
 
 #### Scenario: Décochage de son propre article
 - **WHEN** un utilisateur connecté décoche un article dont le preneur est son login et n'est pas un invité
@@ -137,6 +208,14 @@ Le système SHALL permettre à tout lecteur ou visiteur de décocher un article 
 #### Scenario: Preneur invité portant un login existant
 - **WHEN** un utilisateur connecté décoche un article pris par un invité dont le nom est identique à son login
 - **THEN** l'avertissement est affiché avant la libération
+
+#### Scenario: Décochage d'un article pris pour un tiers
+- **WHEN** n'importe quel lecteur ou visiteur, invité compris, décoche un article pris pour un tiers
+- **THEN** l'article est libéré sans avertissement et son nom de tiers comme son auteur sont effacés
+
+#### Scenario: Tiers portant le login du lecteur
+- **WHEN** un utilisateur connecté décoche un article pris pour un tiers dont le nom est identique à son login
+- **THEN** l'article est libéré sans avertissement
 
 #### Scenario: Purge des avis de modification
 - **WHEN** un article est libéré

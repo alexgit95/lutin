@@ -15,7 +15,8 @@
             <input type="url" th:field="*{url}" maxlength="2048" placeholder="https://...">
         </label>
         <label>Prix (€)
-            <input type="number" th:field="*{prix}" min="0" step="0.01">
+            <input type="number" th:field="*{prix}" min="0" step="0.01" th:readonly="${prixVerrouille}">
+            <small class="cache" th:if="${prixVerrouille}">Ce cadeau est remboursé : décochez d'abord le remboursement pour modifier le prix.</small>
         </label>
         <label>Destinataire
             <select th:field="*{personneId}" required>

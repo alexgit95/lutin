@@ -22,6 +22,11 @@
             <a class="bouton clair" th:href="@{/wishlists/{id}(id=${wishlistId})}">Annuler</a>
         </div>
     </form>
+    <form th:if="${souhaitId != null}" class="suppression-souhait" method="post"
+          th:action="@{/wishlists/{id}/souhaits/{sid}/supprimer(id=${wishlistId},sid=${souhaitId})}"
+          onsubmit="return confirm('Supprimer cet article ?')">
+        <button type="submit" class="lien danger">Supprimer l'article</button>
+    </form>
 </main>
 </body>
 </html>

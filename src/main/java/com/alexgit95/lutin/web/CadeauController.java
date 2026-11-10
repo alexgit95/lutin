@@ -1,8 +1,10 @@
 package com.alexgit95.lutin.web;
 
 import com.alexgit95.lutin.domain.Statut;
+import com.alexgit95.lutin.service.AlerteRemboursementService;
 import com.alexgit95.lutin.service.CadeauService;
 import com.alexgit95.lutin.service.DashboardService;
+import com.alexgit95.lutin.service.RemboursementService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
 import com.alexgit95.lutin.vue.VueListe;
 import org.springframework.stereotype.Controller;
@@ -24,10 +26,15 @@ public class CadeauController {
 
     private final CadeauService cadeaux;
     private final DashboardService dashboard;
+    private final RemboursementService remboursements;
+    private final AlerteRemboursementService alertes;
 
-    public CadeauController(CadeauService cadeaux, DashboardService dashboard) {
+    public CadeauController(CadeauService cadeaux, DashboardService dashboard,
+                            RemboursementService remboursements, AlerteRemboursementService alertes) {
         this.cadeaux = cadeaux;
         this.dashboard = dashboard;
+        this.remboursements = remboursements;
+        this.alertes = alertes;
     }
 
     @GetMapping("/nouveau")
@@ -101,11 +108,31 @@ public class CadeauController {
             vue.cadeaux(), vue.groupes(), vue.page(), vue.page() + 1 < vue.totalPages()));
         model.addAttribute("statuts", Statut.values());
         model.addAttribute("cadeauId", cadeauId);
+        // Le retour à « À acheter » d'un cadeau remboursé crée une alerte : le badge de l'onglet est rafraîchi.
+        model.addAttribute("alertesRemboursement", alertes.compter(listeId, principal.getName()));
         return "liste-fragments :: miseAJourStatut";
+    }
+
+    /** Coche ou décoche le remboursement depuis l'onglet : fragment HTMX (ligne et carte) si demandé, sinon retour à l'onglet. */
+    @PostMapping("/{cadeauId}/rembourse")
+    public String basculerRemboursement(@PathVariable Long listeId, @PathVariable Long cadeauId,
+                                        @RequestParam(defaultValue = "0") int page,
+                                        @RequestHeader(value = "HX-Request", required = false) String htmx,
+                                        Principal principal, Model model) {
+        cadeaux.basculerRemboursement(listeId, cadeauId, principal.getName());
+        if (htmx == null) {
+            return "redirect:/listes/" + listeId + "/remboursements" + (page > 0 ? "?page=" + page : "");
+        }
+        model.addAttribute("ligne", remboursements.ligne(listeId, cadeauId, principal.getName()));
+        model.addAttribute("vue", remboursements.carte(listeId, principal.getName()));
+        model.addAttribute("page", page);
+        return "remboursement-fragments :: miseAJourRemboursement";
     }
 
     private String formulaire(Model model, Long listeId, Long cadeauId, CadeauForm form, Principal principal) {
         DashboardService.Options options = dashboard.options(listeId, principal.getName());
+        model.addAttribute("prixVerrouille",
+                cadeauId != null && cadeaux.estRembourse(listeId, cadeauId, principal.getName()));
         model.addAttribute("form", form);
         model.addAttribute("listeId", listeId);
         model.addAttribute("cadeauId", cadeauId);

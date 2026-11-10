@@ -86,6 +86,7 @@
     </th:block>
     <template>
         <nav th:replace="~{liste-fragments :: barreWorkflow(${vue}, ${statuts}, true)}"></nav>
+        <span th:replace="~{fragments :: badgeRemboursement(${alertesRemboursement}, true)}"></span>
     </template>
 </th:block>
 </body>

@@ -29,6 +29,7 @@ public class SouhaitService {
     }
 
     public static final int TAILLE_PAGE = 50;
+    static final int NOM_MAX = 100;
     private static final BigDecimal PRIX_MAX = new BigDecimal("10000000000");
 
     private final SouhaitRepository souhaits;
@@ -133,9 +134,19 @@ public class SouhaitService {
         prendreSansControle(wishlistId, souhaitId, login, false);
     }
 
+    /** Prise au nom d'un tiers par un lecteur partagé : le login du lecteur est conservé comme auteur. */
+    public void prendrePour(Long wishlistId, Long souhaitId, String login, String nomSaisi) {
+        acces.lecteur(wishlistId, login);
+        prendre(wishlistId, souhaitId, nomSaisi(nomSaisi), false, login);
+    }
+
     /** Sans contrôle de droits : réservé à {@link WishlistPubliqueService}, qui a déjà identifié le visiteur. */
     public void prendreSansControle(Long wishlistId, Long souhaitId, String nom, boolean invite) {
-        if (souhaits.prendre(souhaitId, wishlistId, nom, horloge.instant(), invite) == 0) {
+        prendre(wishlistId, souhaitId, nom, invite, null);
+    }
+
+    private void prendre(Long wishlistId, Long souhaitId, String nom, boolean invite, String via) {
+        if (souhaits.prendre(souhaitId, wishlistId, nom, horloge.instant(), invite, via) == 0) {
             Souhait existant = dansLaWishlist(wishlistId, souhaitId);
             throw new RequeteInvalideException(existant.getPrisParNom() == null
                     ? "Impossible de prendre cet article, réessayez"
@@ -156,7 +167,7 @@ public class SouhaitService {
         if (preneur == null) {
             return new ResultatLiberation(true, null);
         }
-        if (confirmationRequise(preneur, souhait.estPrisParInvite(), login) && !confirme) {
+        if (confirmationRequise(preneur, souhait.estPrisParInvite(), login, souhait.estPrisPourTiers()) && !confirme) {
             return new ResultatLiberation(false, souhait.nomPreneurAffiche());
         }
         souhaits.liberer(souhaitId, wishlistId);
@@ -164,9 +175,22 @@ public class SouhaitService {
         return new ResultatLiberation(true, null);
     }
 
-    /** Seul un compte connecté dont le login est le preneur, et non un invité, libère sans confirmation. */
-    public static boolean confirmationRequise(String preneur, boolean preneurInvite, String login) {
-        return preneurInvite || login == null || !login.equals(preneur);
+    /** Seul un compte connecté dont le login est le preneur, et non un invité, libère sans confirmation ; une prise pour un tiers aussi, pour tous. */
+    public static boolean confirmationRequise(String preneur, boolean preneurInvite, String login,
+                                              boolean prisPourTiers) {
+        return !prisPourTiers && (preneurInvite || login == null || !login.equals(preneur));
+    }
+
+    /** Nom saisi par l'utilisateur pour un tiers ou un invité : nettoyé, obligatoire, borné. */
+    static String nomSaisi(String saisi) {
+        String propre = saisi == null ? "" : saisi.replaceAll("[\\p{Cntrl}\\p{Cf}]", " ").replaceAll(" +", " ").trim();
+        if (propre.isEmpty()) {
+            throw new RequeteInvalideException("Votre nom est obligatoire");
+        }
+        if (propre.length() > NOM_MAX) {
+            throw new RequeteInvalideException("Le nom est trop long (" + NOM_MAX + " caractères maximum)");
+        }
+        return propre;
     }
 
     private Page<Souhait> lot(Long wishlistId, int page) {

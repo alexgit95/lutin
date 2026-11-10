@@ -5,13 +5,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
+
+    // Même prédicat que sommeDebourse : l'argent a quitté le compte courant.
+    String REMBOURSABLE = "c.pourTiers = false and c.prix is not null "
+            + "and c.statut <> com.alexgit95.lutin.domain.Statut.A_ACHETER";
 
     @EntityGraph(attributePaths = "personne")
     Page<Cadeau> findByListeId(Long listeId, Pageable pageable);
@@ -33,6 +39,28 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
     Page<Cadeau> findPourLecteur(@Param("listeId") Long listeId, Pageable pageable);
 
     long countByPersonneId(Long personneId);
+
+    List<Cadeau> findByPersonneIdAndRembourseLeIsNotNull(Long personneId);
+
+    @EntityGraph(attributePaths = "personne")
+    @Query(value = "select c from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
+            + " order by case when c.rembourseLe is null then 0 else 1 end, c.personne.nom, c.personne.id, c.nom, c.id",
+            countQuery = "select count(c) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE)
+    Page<Cadeau> findRemboursables(@Param("listeId") Long listeId, Pageable pageable);
+
+    @Query("select coalesce(sum(c.prix), 0) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
+            + " and c.rembourseLe is null")
+    BigDecimal sommeARembourser(@Param("listeId") Long listeId);
+
+    @Query("select coalesce(sum(c.prix), 0) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE
+            + " and c.rembourseLe is not null")
+    BigDecimal sommeRembourse(@Param("listeId") Long listeId);
+
+    /** Seuls les cadeaux encore remboursables et non remboursés sont touchés ; renvoie leur nombre. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update Cadeau c set c.rembourseLe = :date where c.liste.id = :listeId and " + REMBOURSABLE
+            + " and c.rembourseLe is null")
+    int marquerRembourses(@Param("listeId") Long listeId, @Param("date") LocalDate date);
 
     void deleteByListeId(Long listeId);
 

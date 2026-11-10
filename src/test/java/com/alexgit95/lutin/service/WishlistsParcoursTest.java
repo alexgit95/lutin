@@ -1,6 +1,7 @@
 package com.alexgit95.lutin.service;
 
 import com.alexgit95.lutin.domain.Avis;
+import com.alexgit95.lutin.domain.Souhait;
 import com.alexgit95.lutin.domain.TypeAvis;
 import com.alexgit95.lutin.domain.Utilisateur;
 import com.alexgit95.lutin.repository.AvisRepository;
@@ -323,10 +324,125 @@ class WishlistsParcoursTest {
 
     @Test
     void unLecteurNonIdentifieDoitToujoursConfirmer() {
-        assertThat(SouhaitService.confirmationRequise("bob", false, null)).isTrue();
-        assertThat(SouhaitService.confirmationRequise("bob", false, "carol")).isTrue();
-        assertThat(SouhaitService.confirmationRequise("bob", false, "bob")).isFalse();
-        assertThat(SouhaitService.confirmationRequise("bob", true, "bob")).isTrue();
+        assertThat(SouhaitService.confirmationRequise("bob", false, null, false)).isTrue();
+        assertThat(SouhaitService.confirmationRequise("bob", false, "carol", false)).isTrue();
+        assertThat(SouhaitService.confirmationRequise("bob", false, "bob", false)).isFalse();
+        assertThat(SouhaitService.confirmationRequise("bob", true, "bob", false)).isTrue();
+    }
+
+    @Test
+    void unePrisePourUnTiersNeDemandeJamaisDeConfirmation() {
+        assertThat(SouhaitService.confirmationRequise("Marie", false, null, true)).isFalse();
+        assertThat(SouhaitService.confirmationRequise("Marie", false, "carol", true)).isFalse();
+        assertThat(SouhaitService.confirmationRequise("bob", false, "bob", true)).isFalse();
+        assertThat(SouhaitService.confirmationRequise("Marie", true, null, true)).isFalse();
+    }
+
+    @Test
+    void unLecteurPrendUnArticlePourUnTiersEtLeLoginDuLecteurEstConserve() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "  Tante\u0000 Marie ");
+
+        assertThat(souhaitService.vueLecteur(wishlistId, "carol", 0).souhaits().get(0).prisPar())
+                .isEqualTo("Tante Marie (via bob)");
+        Souhait s = souhaits.findAll().get(0);
+        assertThat(s.getPrisParNom()).isEqualTo("Tante Marie");
+        assertThat(s.getPrisViaLogin()).isEqualTo("bob");
+        assertThat(s.estPrisParInvite()).isFalse();
+        assertThat(s.getPrisLe()).isNotNull();
+    }
+
+    @Test
+    void laPrisePourUnTiersExigeUnNomValide() {
+        Long id = article("Livre");
+
+        for (String mauvais : new String[]{null, "", "   ", "\u0000\u202E"}) {
+            assertThatThrownBy(() -> souhaitService.prendrePour(wishlistId, id, "bob", mauvais))
+                    .isInstanceOf(RequeteInvalideException.class).hasMessageContaining("obligatoire");
+        }
+        assertThatThrownBy(() -> souhaitService.prendrePour(wishlistId, id, "bob", "x".repeat(101)))
+                .isInstanceOf(RequeteInvalideException.class).hasMessageContaining("trop long");
+        souhaitService.prendrePour(wishlistId, id, "bob", "x".repeat(100));
+        assertThat(souhaits.findAll().get(0).getPrisParNom()).hasSize(100);
+    }
+
+    @Test
+    void laPrisePourUnTiersEstRefuseAuProprietaireEtAuxNonLecteurs() {
+        Long id = article("Livre");
+
+        assertThatThrownBy(() -> souhaitService.prendrePour(wishlistId, id, "alice", "Marie"))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> souhaitService.prendrePour(wishlistId, id, "dave", "Marie"))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThat(souhaits.findAll().get(0).getPrisParNom()).isNull();
+    }
+
+    @Test
+    void unArticleDejaPrisNePeutPasEtrePrisPourUnTiers() {
+        Long id = article("Livre");
+        souhaitService.prendre(wishlistId, id, "bob");
+
+        assertThatThrownBy(() -> souhaitService.prendrePour(wishlistId, id, "carol", "Marie"))
+                .isInstanceOf(RequeteInvalideException.class).hasMessageContaining("bob");
+        assertThat(souhaits.findAll().get(0).getPrisViaLogin()).isNull();
+    }
+
+    @Test
+    void unArticlePrisPourUnTiersEstLibereSansConfirmationParTousLesLecteurs() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "Marie");
+
+        SouhaitService.ResultatLiberation r = souhaitService.liberer(wishlistId, id, "carol", false);
+
+        assertThat(r.libere()).isTrue();
+        Souhait s = souhaits.findAll().get(0);
+        assertThat(s.getPrisParNom()).isNull();
+        assertThat(s.getPrisViaLogin()).isNull();
+        assertThat(s.getPrisLe()).isNull();
+    }
+
+    @Test
+    void unTiersPorteurDuLoginDuLecteurEstLibereSansConfirmation() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "carol");
+
+        assertThat(souhaitService.liberer(wishlistId, id, "carol", false).libere()).isTrue();
+    }
+
+    @Test
+    void unArticleLibereApresUnePrisePourUnTiersPeutEtrePrisOrdinairement() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "Marie");
+        souhaitService.liberer(wishlistId, id, "carol", false);
+
+        souhaitService.prendre(wishlistId, id, "carol");
+
+        Souhait s = souhaits.findAll().get(0);
+        assertThat(s.getPrisParNom()).isEqualTo("carol");
+        assertThat(s.getPrisViaLogin()).isNull();
+        assertThat(souhaitService.vueLecteur(wishlistId, "bob", 0).souhaits().get(0).prisPar()).isEqualTo("carol");
+    }
+
+    @Test
+    void lAvisSurUnArticlePrisPourUnTiersNommeLeTiersSansMentionVia() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "Marie");
+
+        souhaitService.modifier(wishlistId, id, "alice", new SouhaitCommande("Livre v2", null, null));
+
+        Avis a = avisDe("carol").get(0);
+        assertThat(a.getPrisParNom()).isEqualTo("Marie");
+        assertThat(AvisService.vue(a).message()).contains("pris par Marie,").doesNotContain("via");
+    }
+
+    @Test
+    void laVueDuProprietaireResteAveugleSurUnArticlePrisPourUnTiers() {
+        Long id = article("Livre");
+        souhaitService.prendrePour(wishlistId, id, "bob", "Marie");
+
+        assertThat(Arrays.stream(VueSouhaitProprietaire.class.getRecordComponents()).map(RecordComponent::getName))
+                .noneMatch(n -> n.toLowerCase().contains("pris") || n.toLowerCase().contains("via"));
+        assertThat(souhaitService.vueProprietaire(wishlistId, "alice", 0).souhaits()).hasSize(1);
     }
 
     @Test

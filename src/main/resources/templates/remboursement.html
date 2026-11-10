@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Remboursement')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page">
+<nav th:replace="~{fragments :: onglets(${vue.id()}, 'remboursement', false)}"></nav>
+<div id="contenu">
+    <div th:replace="~{fragments :: messages}"></div>
+
+    <div class="entete">
+        <h1>Remboursement</h1>
+    </div>
+
+    <section th:replace="~{remboursement-fragments :: alertesRemboursement(${vue}, false)}"></section>
+    <section th:replace="~{remboursement-fragments :: carteRemboursement(${vue}, false)}"></section>
+
+    <section class="panneau">
+        <h2>Cadeaux remboursables</h2>
+        <p class="vide" th:if="${#lists.isEmpty(vue.cadeaux())}">Aucun cadeau à rembourser pour le moment.</p>
+        <div class="defilement" th:unless="${#lists.isEmpty(vue.cadeaux())}">
+            <table>
+                <thead>
+                <tr><th>Cadeau</th><th>Pour</th><th>Prix</th><th>Statut</th><th>Remboursement</th></tr>
+                </thead>
+                <tbody>
+                <th:block th:each="ligne : ${vue.cadeaux()}">
+                    <tr th:replace="~{remboursement-fragments :: ligneRemboursement(${ligne}, ${vue.id()}, ${vue.page()})}"></tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" th:if="${vue.totalPages() > 1}">
+            <a th:if="${vue.page() > 0}" th:href="@{/listes/{id}/remboursements(id=${vue.id()},page=${vue.page() - 1})}">&laquo; Précédent</a>
+            <span th:text="${vue.page() + 1} + ' / ' + ${vue.totalPages()}">1 / 2</span>
+            <a th:if="${vue.page() + 1 < vue.totalPages()}" th:href="@{/listes/{id}/remboursements(id=${vue.id()},page=${vue.page() + 1})}">Suivant &raquo;</a>
+        </div>
+    </section>
+</div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<tr th:fragment="ligneRemboursement(ligne, listeId, page)" th:id="'remb-' + ${ligne.id()}">
+    <td th:text="${ligne.nom()}">Cadeau</td>
+    <td th:text="${ligne.personne()}">Maman</td>
+    <td><span th:replace="~{fragments :: montant(${ligne.prix()})}"></span></td>
+    <td><span th:class="'pastille st-' + ${ligne.statut()}" th:text="${ligne.statut().libelle}">Statut</span></td>
+    <td>
+        <form class="remb-form" method="post"
+              th:action="@{/listes/{id}/cadeaux/{cid}/rembourse(id=${listeId},cid=${ligne.id()})}"
+              th:hx-post="@{/listes/{id}/cadeaux/{cid}/rembourse(id=${listeId},cid=${ligne.id()})}"
+              th:attr="hx-target='#remb-' + ${ligne.id()}" hx-swap="outerHTML">
+            <input type="hidden" name="page" th:value="${page}">
+            <button type="submit" class="pastille-remb" th:classappend="${ligne.rembourseLe() != null} ? 'ok'"
+                    th:text="${ligne.rembourseLe() != null} ? 'remboursé le ' + ${ligne.rembourseLe()} : '€ à rembourser'">€ à rembourser</button>
+        </form>
+    </td>
+</tr>
+
+<section th:fragment="carteRemboursement(vue, oob)" id="carte-remboursement" class="panneau carte-remboursement"
+         th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">
+    <h2>À rembourser</h2>
+    <p class="remb-montants">
+        <strong><span th:replace="~{fragments :: montant(${vue.aRembourser()})}"></span></strong> à rembourser
+        &middot; <span th:replace="~{fragments :: montant(${vue.rembourse()})}"></span> déjà remboursés
+    </p>
+    <form th:action="@{/listes/{id}/remboursements(id=${vue.id()})}" method="post" class="ligne">
+        <span>À virer : <b><span th:replace="~{fragments :: montant(${vue.aRembourser()})}"></span></b></span>
+        <input type="date" name="date" th:value="${vue.aujourdhui()}" th:max="${vue.aujourdhui()}" required>
+        <button type="submit" th:disabled="${vue.aRembourser().signum() == 0}">Tout marquer remboursé</button>
+    </form>
+</section>
+
+<section th:fragment="alertesRemboursement(vue, oob)" id="alertes-remboursement"
+         th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">
+    <div class="alerte-remb" role="alert" th:each="a : ${vue.alertes()}">
+        <span>Virement en trop : <b><span th:replace="~{fragments :: montant(${a.montant()})}"></span></b>
+            pour « <span th:text="${a.cadeauNom()}">Cadeau</span> », qui n'est plus à rembourser.</span>
+        <form th:action="@{/listes/{id}/alertes/{aid}/fermer(id=${vue.id()},aid=${a.id()})}" method="post" class="inline">
+            <button type="submit" class="clair">Fermer</button>
+        </form>
+    </div>
+    <p class="vide" th:if="${vue.totalAlertes() > #lists.size(vue.alertes())}"
+       th:text="'… et ' + ${vue.totalAlertes() - #lists.size(vue.alertes())} + ' autre(s) alerte(s)'"></p>
+</section>
+
+<th:block th:fragment="miseAJourRemboursement">
+    <tr th:replace="~{remboursement-fragments :: ligneRemboursement(${ligne}, ${vue.id()}, ${page})}"></tr>
+    <template>
+        <section th:replace="~{remboursement-fragments :: carteRemboursement(${vue}, true)}"></section>
+    </template>
+</th:block>
+</body>
+</html>

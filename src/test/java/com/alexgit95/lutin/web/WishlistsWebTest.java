@@ -137,6 +137,60 @@ class WishlistsWebTest {
     }
 
     @Test
+    void leLecteurVoitLeBoutonDeLaPartDeEtLePrendPourUnTiers() throws Exception {
+        mvc.perform(get(url("")).with(user("bob"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("De la part de")))
+                .andExpect(content().string(containsString("data-prendre-pour-url")))
+                .andExpect(content().string(containsString("dialogue-pour")));
+
+        mvc.perform(post(url("/souhaits/" + souhaitId + "/pris-pour")).with(user("bob")).with(csrf())
+                        .param("nom", "Tante Marie"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl(url("")));
+
+        assertThat(souhaits.findAll().get(0).getPrisParNom()).isEqualTo("Tante Marie");
+        assertThat(souhaits.findAll().get(0).getPrisViaLogin()).isEqualTo("bob");
+        mvc.perform(get(url("")).with(user("carol"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Tante Marie (via bob)")))
+                .andExpect(content().string(not(containsString("data-prendre-pour-url"))));
+    }
+
+    @Test
+    void laPrisePourUnTiersExigeLeCsrfEtLesDroitsEtRefuseUnNomVide() throws Exception {
+        mvc.perform(post(url("/souhaits/" + souhaitId + "/pris-pour")).with(user("bob")).param("nom", "Marie"))
+                .andExpect(status().isForbidden());
+        for (String login : new String[]{"alice", "dave", "root"}) {
+            mvc.perform(post(url("/souhaits/" + souhaitId + "/pris-pour")).with(user(login)).with(csrf())
+                            .param("nom", "Marie"))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(post(url("/souhaits/" + souhaitId + "/pris-pour")).with(user("bob")).with(csrf())
+                        .param("nom", "  "))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attribute("erreur", containsString("obligatoire")));
+        assertThat(souhaits.findAll().get(0).getPrisParNom()).isNull();
+    }
+
+    @Test
+    void lArticlePrisPourUnTiersEstLibereSansAvertissementParUnAutreLecteur() throws Exception {
+        souhaitService.prendrePour(wishlistId, souhaitId, "bob", "Marie");
+
+        mvc.perform(post(url("/souhaits/" + souhaitId + "/libere")).with(user("carol")).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl(url("")));
+        assertThat(souhaits.findAll().get(0).getPrisParNom()).isNull();
+    }
+
+    @Test
+    void leProprietaireNeVoitNiLeBoutonNiLeTiersNiLeVia() throws Exception {
+        souhaitService.prendrePour(wishlistId, souhaitId, "bob", "Marie");
+
+        mvc.perform(get(url("")).with(user("alice"))).andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("De la part de"))))
+                .andExpect(content().string(not(containsString("Marie"))))
+                .andExpect(content().string(not(containsString("via"))));
+    }
+
+    @Test
     void unArticleDejaPrisRenvoieUneErreurLisible() throws Exception {
         souhaitService.prendre(wishlistId, souhaitId, "bob");
 
