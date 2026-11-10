@@ -82,12 +82,23 @@ Le lecteur voit le dashboard complet de la liste partagée. Toute tentative de m
 ### Sauvegarde et restauration (administrateur)
 Section « Sauvegarde » de l'écran `/admin`, réservée à l'administrateur et protégée par CSRF, dans les deux modes d'accès.
 
-- **Export** : un fichier JSON `lutin-export-AAAA-MM-JJ.json` contenant les 12 tables (utilisateurs, listes, personnes, tags, cadeaux et leurs tags, partages, wishlists, souhaits, partages de wishlists, avis, alertes de remboursement), écrit en flux par lots de 500 lignes, sans mise en cache. Il porte un en-tête (format, version, mode d'accès, version de l'application, date).
+- **Export** : un fichier JSON `lutin-export-AAAA-MM-JJ.json` contenant les 13 tables (utilisateurs, listes, personnes, tags, cadeaux et leurs tags, partages, wishlists, souhaits, partages de wishlists, avis, alertes de remboursement, clés d'API), écrit en flux par lots de 500 lignes, sans mise en cache. Il porte un en-tête (format, version, mode d'accès, version de l'application, date).
 - **Import = remplacement total** : toutes les données actuelles, utilisateurs compris, sont supprimées puis remplacées par celles du fichier, en **une seule transaction** (une erreur annule tout). Les identifiants sont conservés, donc les adresses `/listes/{id}` et les liens publics `/p/{jeton}` restent valides, et les compteurs d'identifiants sont recalés.
 - **Garde-fous** : le fichier est d'abord vérifié en entier sans rien écrire (format, version, mode, tables et colonnes, types, longueurs, références, JSON complet) ; **votre compte administrateur doit figurer dans le fichier** avec le rôle administrateur (empreinte d'email en prod, login en dev) ; il faut saisir « IMPORTER » ; un seul import à la fois (409) ; taille limitée à 100 Mo.
 - **Un fichier n'est importable que dans le même mode** (dev ou prod) et la même version de format. En prod, restaurer sur une instance dont `EMAIL_HMAC_SECRET` diffère empêche de reconnaître les comptes autres que le vôtre.
 - **Données sensibles** : le fichier contient les empreintes d'emails, les hachés de mots de passe (dev) et les jetons des liens publics. Conservez-le en lieu sûr ; son contenu n'est jamais écrit dans les journaux.
 - **Limites** : l'export n'est pas garanti cohérent si quelqu'un écrit en même temps ; la requête de recalage des séquences PostgreSQL est validée par relecture (les tests tournent sur SQLite).
+- **Clés d'API** : l'export contient la table des clés d'API (nom, empreinte, dates, jamais la clé en clair). Restaurer une ancienne sauvegarde **remet en service les clés qui existaient alors**, y compris une clé révoquée depuis : révoquez-la de nouveau après une restauration.
+
+### Sauvegarde par clé d'API (réseau local)
+Pour automatiser la sauvegarde (cron, NAS, script), l'administrateur génère des clés dans la section « Clés d'API de sauvegarde » de `/admin`, dans les deux modes d'accès.
+
+- **Génération** : saisir un nom (100 caractères maximum, unique sans tenir compte de la casse) puis « Générer une clé ». La clé (`lutin_...`) n'est affichée **qu'une seule fois** ; seule son empreinte SHA-256 est conservée. Plusieurs clés peuvent être actives (20 au maximum), par exemple une par script.
+- **Suivi** : la liste affiche pour chaque clé le nom, la date de création et la date de dernière utilisation (« Jamais utilisée » tant qu'elle n'a pas servi). Un appel refusé ne modifie aucune date.
+- **Révocation** : le bouton « Révoquer » supprime la clé, qui cesse immédiatement de fonctionner.
+- **Appel** : `curl -H "Authorization: Bearer <clé>" http://hôte:2424/api/sauvegarde -o sauvegarde.json`. La réponse est le même fichier que l'export de l'administrateur ; une clé absente, mal formée, inconnue ou révoquée reçoit un 401 identique. La clé ne donne accès qu'à cet endpoint (ni import, ni écrans). Aucune session, aucun CSRF, aucun jeton Cloudflare n'est nécessaire.
+- **Réseau local uniquement** : l'appel se fait sur le port publié du conteneur (`2424` par défaut), sans passer par Cloudflare. **Ne créez aucune politique Bypass Cloudflare pour `/api/sauvegarde`** : sans Bypass, Cloudflare Access bloque l'accès depuis Internet. Le port ne doit pas être restreint à `127.0.0.1` si le script tourne sur une autre machine.
+- **Limites** : la connexion est en HTTP, donc la clé circule en clair sur le réseau local : réservez cet usage à un réseau de confiance. Une clé donne accès à toutes les données (empreintes d'emails, hachés de mots de passe en dev, liens publics) : conservez-la comme un mot de passe. Il n'y a pas de restriction par adresse IP ni de limitation de débit.
 
 ### PWA
 Manifeste, icônes et service worker minimal : l'application est installable sur Android (HTTPS requis, sauf `localhost`). Pas de mode hors ligne.

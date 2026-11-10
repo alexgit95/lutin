@@ -22,7 +22,7 @@ import static com.alexgit95.lutin.transfert.TypeColonne.TEXTE;
 public final class Tables {
 
     public static final String FORMAT = "lutin-export";
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     private static final Set<String> STATUTS = noms(Statut.values());
     private static final Set<String> TYPES_AVIS = noms(TypeAvis.values());
@@ -102,7 +102,14 @@ public final class Tables {
                     ref("liste_id", "e.liste.id", "liste_achat"),
                     texte("cadeau_nom", "e.cadeauNom", true, 255),
                     col("montant", "e.montant", DECIMAL, true),
-                    col("cree_le", "e.creeLe", INSTANT, true)));
+                    col("cree_le", "e.creeLe", INSTANT, true)),
+            table("api_key", "ApiKey e", true,
+                    id(),
+                    texte("nom", "e.nom", true, 100),
+                    texte("nom_cle", "e.nomCle", true, 100),
+                    texte("empreinte", "e.empreinte", true, 64),
+                    col("cree_le", "e.creeLe", INSTANT, true),
+                    col("derniere_utilisation", "e.derniereUtilisation", INSTANT, false)));
 
     private Tables() {
     }

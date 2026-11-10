@@ -2,6 +2,28 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.14.0] - 2026-11-10
+
+### Added
+- **Clés d'API de sauvegarde** : l'administrateur génère, liste et révoque des clés nommées depuis `/admin` (dans les deux modes, CSRF actif). Plusieurs clés peuvent être actives (20 au maximum) ; le nom est obligatoire, nettoyé, limité à 100 caractères et unique sans tenir compte de la casse. La clé (`lutin_` + 32 octets aléatoires en base64url) n'est affichée qu'une fois, dans la réponse directe à la génération (ni redirection, ni session) ; seule son empreinte SHA-256 est conservée. L'écran montre la date de création et la date de dernière utilisation (« Jamais utilisée »).
+  - Nouvelle table `api_key` (`id`, `nom`, `nom_cle` unique, `empreinte` unique, `cree_le`, `derniere_utilisation` nullable), compatible SQLite et PostgreSQL, documentée dans `docs/database.puml`.
+  - `CleApiService` (génération, liste, révocation, authentification avec mise à jour atomique de la dernière utilisation).
+- **Endpoint `GET /api/sauvegarde`** (`ApiSauvegardeController`, annotations OpenAPI `@Tag`/`@Operation`/`@ApiResponse` avec 200 et 401) : renvoie le fichier d'export complet à qui présente `Authorization: Bearer <clé>`. Chaîne de sécurité dédiée `SecurityApiConfig` (`/api/**`, sans état, sans CSRF, indépendante de Cloudflare Access, `CleApiFilter`) ; 401 identique pour clé absente, mal formée, inconnue ou révoquée ; une clé ne donne accès qu'à cet endpoint. Journalisation du nom de la clé et des totaux uniquement.
+- Dépendance `io.swagger.core.v3:swagger-annotations-jakarta` 2.2.55 (annotations seulement, aucune documentation en ligne exposée).
+- Tests : `CleApiServiceTest` (13), `ApiSauvegardeWebTest` (9), `AdminCleApiWebTest` (7), `ApiSauvegardeCloudflareTest` (4), 1 test de transfert. Total de la suite : 386.
+
+### Changed
+- **BREAKING** : le format d'export passe en version 3 (table `api_key` ajoutée, 13 tables) ; un fichier exporté par la version précédente est refusé à l'import (« Version de format incompatible »).
+- Restaurer une sauvegarde remet en service les clés d'API qu'elle contient, y compris une clé révoquée depuis (risque accepté, documenté dans le README).
+- `AdminController` gère la génération et la révocation des clés d'API ; la page `/admin` reçoit la liste des clés.
+- Version du `pom.xml` portée à 0.14.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée. Une table est ajoutée par Hibernate (`ddl-auto`) sans migration. Aucune règle Cloudflare à ajouter : ne pas créer de Bypass pour `/api/sauvegarde`.
+
+### Fixed
+- Aucun.
+
 ## [0.13.0] - 2026-11-10
 
 ### Added

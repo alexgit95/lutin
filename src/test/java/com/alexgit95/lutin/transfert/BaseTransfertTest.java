@@ -5,6 +5,7 @@ import com.alexgit95.lutin.domain.Statut;
 import com.alexgit95.lutin.domain.Tag;
 import com.alexgit95.lutin.domain.Utilisateur;
 import com.alexgit95.lutin.repository.AlerteRemboursementRepository;
+import com.alexgit95.lutin.repository.ApiKeyRepository;
 import com.alexgit95.lutin.repository.AvisRepository;
 import com.alexgit95.lutin.repository.CadeauRepository;
 import com.alexgit95.lutin.repository.ListeAchatRepository;
@@ -18,6 +19,7 @@ import com.alexgit95.lutin.repository.WishlistRepository;
 import com.alexgit95.lutin.security.EmailHmacService;
 import com.alexgit95.lutin.service.CadeauCommande;
 import com.alexgit95.lutin.service.CadeauService;
+import com.alexgit95.lutin.service.CleApiService;
 import com.alexgit95.lutin.service.ListeAchatService;
 import com.alexgit95.lutin.service.PartageService;
 import com.alexgit95.lutin.service.PersonneService;
@@ -37,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/** Jeu de données couvrant les 12 tables, partagé par les tests de transfert (modes local et cloudflare). */
+/** Jeu de données couvrant les 13 tables, partagé par les tests de transfert (modes local et cloudflare). */
 abstract class BaseTransfertTest {
 
     @Autowired ExportService export;
@@ -60,12 +62,15 @@ abstract class BaseTransfertTest {
     @Autowired WishlistPartageRepository wishlistPartages;
     @Autowired AvisRepository avis;
     @Autowired AlerteRemboursementRepository alertes;
+    @Autowired ApiKeyRepository clesApi;
+    @Autowired CleApiService cleApiService;
     @Autowired(required = false) EmailHmacService hmac;
 
     protected Long listeId;
     protected Long mamanId;
     protected Long wishlistId;
     protected String jeton;
+    protected String cleApi;
 
     @BeforeEach
     void preparerLesDonnees() {
@@ -99,6 +104,8 @@ abstract class BaseTransfertTest {
         souhaitService.prendrePour(wishlistId, livre, "bob", "Tante Marie");
         souhaitService.modifier(wishlistId, casque, "alice",
                 new SouhaitCommande("Casque audio v2", "https://shop.example/casque", new BigDecimal("89.99")));
+        cleApi = cleApiService.generer("nas-backup").cle();
+        cleApiService.authentifier(cleApi);
     }
 
     @AfterEach
@@ -108,6 +115,7 @@ abstract class BaseTransfertTest {
         wishlistPartages.deleteAll();
         wishlists.deleteAll();
         alertes.deleteAll();
+        clesApi.deleteAll();
         cadeaux.deleteAll();
         partages.deleteAll();
         tags.deleteAll();

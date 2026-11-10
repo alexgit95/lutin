@@ -52,7 +52,7 @@ class TransfertTest extends BaseTransfertTest {
     void lExportContientToutesLesTablesDansLOrdreAvecUnEnteteVersionne() {
         String json = stable(exporter());
 
-        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":2,\"mode\":\"local\"")
+        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":3,\"mode\":\"local\"")
                 .contains("\"versionApplication\":\"").contains("\"exporteLe\":\"\"");
         int position = json.indexOf("\"tables\":{");
         for (TableTransfert table : Tables.TOUTES) {
@@ -72,7 +72,7 @@ class TransfertTest extends BaseTransfertTest {
                 .containsEntry("cadeau_tag", 1L).containsEntry("partage", partages.count())
                 .containsEntry("wishlist", wishlists.count()).containsEntry("souhait", souhaits.count())
                 .containsEntry("wishlist_partage", wishlistPartages.count()).containsEntry("avis", avis.count())
-                .containsEntry("alerte_remboursement", alertes.count());
+                .containsEntry("alerte_remboursement", alertes.count()).containsEntry("api_key", clesApi.count());
         assertThat(compteurs.values()).allSatisfy(n -> assertThat(n).isPositive());
     }
 
@@ -89,6 +89,26 @@ class TransfertTest extends BaseTransfertTest {
                 .singleElement().satisfies(s -> assertThat(s.getPrisViaLogin()).isEqualTo("bob"));
         assertThat(souhaits.findAll()).filteredOn(s -> "bob".equals(s.getPrisParNom()))
                 .singleElement().satisfies(s -> assertThat(s.getPrisViaLogin()).isNull());
+    }
+
+    @Test
+    void lesClesDApiSontExporteesSousFormeDEmpreinteEtRestaureesAvecLeursDates() {
+        byte[] sauvegarde = exporter();
+        String json = stable(sauvegarde);
+        assertThat(json).contains("\"nom\":\"nas-backup\"").contains("\"empreinte\":\"")
+                .doesNotContain(cleApi);
+        var avantImport = clesApi.findAll().get(0);
+        assertThat(avantImport.getDerniereUtilisation()).isNotNull();
+        clesApi.deleteAll();
+        assertThat(cleApiService.authentifier(cleApi)).isEmpty();
+
+        importer(sauvegarde);
+
+        var restauree = clesApi.findAll().get(0);
+        assertThat(restauree.getEmpreinte()).isEqualTo(avantImport.getEmpreinte());
+        assertThat(restauree.getCreeLe()).isEqualTo(avantImport.getCreeLe());
+        assertThat(restauree.getDerniereUtilisation()).isEqualTo(avantImport.getDerniereUtilisation());
+        assertThat(cleApiService.authentifier(cleApi)).contains("nas-backup");
     }
 
     @Test
@@ -165,7 +185,7 @@ class TransfertTest extends BaseTransfertTest {
     void unFichierDUneAutreVersionOuUnAutreFormatOuUnAutreModeEstRefuse() {
         String json = stable(exporter());
 
-        refuse(remplacerLePremier(json, "\"version\":2", "\"version\":3"), "Version de format incompatible");
+        refuse(remplacerLePremier(json, "\"version\":3", "\"version\":4"), "Version de format incompatible");
         refuse(remplacerLePremier(json, "\"format\":\"lutin-export\"", "\"format\":\"autre\""), "pas un export Lutin");
         refuse(remplacerLePremier(json, "\"mode\":\"local\"", "\"mode\":\"cloudflare\""), "mode");
     }

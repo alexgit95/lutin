@@ -214,3 +214,7 @@ form.suppression-souhait { margin-top: 1.5rem; padding-top: 1rem; border-top: 1p
 .sauvegarde { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--bord); }
 .sauvegarde .avertissement { padding: .6rem .8rem; border-radius: 8px; background: #fff0d9; color: #8a5a00; font-size: .9rem; }
 .sauvegarde button.danger { background: #c0392b; color: #fff; }
+.cles-api { padding: 0; list-style: none; }
+.cles-api li { display: flex; gap: .75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: .5rem 0; border-bottom: 1px solid var(--bord); }
+.cles-api form { margin: 0; }
+.sauvegarde code { word-break: break-all; }

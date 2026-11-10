@@ -117,6 +117,16 @@ entity "alerte_remboursement" as alerte_remboursement {
   * cree_le : timestamp <<reste jusqu'à sa fermeture>>
 }
 
+entity "api_key" as api_key {
+  * id : bigint <<PK>>
+  --
+  * nom : varchar(100)
+  * nom_cle : varchar(100) <<unique, nom en minuscules>>
+  * empreinte : varchar(64) <<unique, SHA-256 de la clé, sans FK ni clé en clair>>
+  * cree_le : timestamp
+  derniere_utilisation : timestamp <<nul = jamais utilisée>>
+}
+
 utilisateur ||--o{ liste_achat : possède
 liste_achat ||--o{ personne
 liste_achat ||--o{ cadeau

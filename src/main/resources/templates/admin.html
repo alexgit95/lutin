@@ -35,6 +35,41 @@
             <button type="submit" class="danger">Importer et remplacer</button>
         </form>
     </section>
+
+    <section class="sauvegarde" id="cles-api">
+        <h2>Clés d'API de sauvegarde</h2>
+        <p>Une clé permet à un script du réseau local de récupérer la sauvegarde sans compte, par <code>GET /api/sauvegarde</code>.</p>
+        <p class="avertissement">Une clé donne accès à <b>toutes les données</b> (empreintes d'emails, mots de passe hachés en mode local,
+            liens publics). Elle circule en clair en HTTP sur le réseau local : ne l'utilisez que sur un réseau de confiance.</p>
+
+        <div class="info" th:if="${cleGeneree}">
+            <p>Clé « <b th:text="${cleGeneree.nom()}">nas</b> » créée. <b>Copiez-la maintenant : elle ne sera plus affichée.</b></p>
+            <p><code id="cle-generee" th:text="${cleGeneree.cle()}"></code></p>
+            <p>Exemple : <code>curl -H "Authorization: Bearer &lt;clé&gt;" http://hôte:2424/api/sauvegarde -o sauvegarde.json</code></p>
+        </div>
+
+        <p class="vide" th:if="${#lists.isEmpty(clesApi)}">Aucune clé.</p>
+        <ul class="cles-api" th:unless="${#lists.isEmpty(clesApi)}">
+            <li th:each="c : ${clesApi}">
+                <div>
+                    <b th:text="${c.nom()}">nas-backup</b><br>
+                    <small>Créée le <span th:text="${c.creeLe()}">10/11/2026 09:12</span> ·
+                        Dernière utilisation : <span th:text="${c.derniereUtilisation() != null} ? ${c.derniereUtilisation()} : 'Jamais utilisée'">Jamais utilisée</span></small>
+                </div>
+                <form th:action="@{/admin/cles-api/{id}/revoquer(id=${c.id()})}" method="post"
+                      onsubmit="return confirm('Révoquer cette clé ? Les scripts qui l\'utilisent seront refusés.')">
+                    <button type="submit" class="danger">Révoquer</button>
+                </form>
+            </li>
+        </ul>
+
+        <form th:action="@{/admin/cles-api}" method="post">
+            <label>Nom de la nouvelle clé
+                <input type="text" name="nom" maxlength="100" autocomplete="off" required>
+            </label>
+            <button type="submit">Générer une clé</button>
+        </form>
+    </section>
     <p><a th:href="@{/}">Retour</a></p>
 </main>
 </body>
