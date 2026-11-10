@@ -51,6 +51,10 @@ public class Souhait {
     @Column(name = "pris_par_invite")
     private Boolean prisParInvite;
 
+    // Login du lecteur qui a pris l'article pour un tiers (nom dans prisParNom) ; nul pour une prise ordinaire.
+    @Column(name = "pris_via_login", length = 50)
+    private String prisViaLogin;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "wishlist_id", nullable = false)
     private Wishlist wishlist;
@@ -59,8 +63,18 @@ public class Souhait {
         return Boolean.TRUE.equals(prisParInvite);
     }
 
-    /** Nom du preneur tel qu'affiché : un invité porte la mention « (invité) ». */
+    public boolean estPrisPourTiers() {
+        return prisViaLogin != null;
+    }
+
+    /** Nom du preneur tel qu'affiché : un invité porte « (invité) », une prise pour un tiers « (via login) ». */
     public String nomPreneurAffiche() {
-        return prisParNom == null ? null : prisParNom + (estPrisParInvite() ? " (invité)" : "");
+        if (prisParNom == null) {
+            return null;
+        }
+        if (prisViaLogin != null) {
+            return prisParNom + " (via " + prisViaLogin + ")";
+        }
+        return prisParNom + (estPrisParInvite() ? " (invité)" : "");
     }
 }

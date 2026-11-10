@@ -80,6 +80,7 @@ entity "souhait" as souhait {
   prix : numeric(12,2)
   pris_par_nom : varchar(100) <<texte, sans FK : login ou nom d'invité>>
   pris_par_invite : boolean <<nul = faux ; vrai pour un nom saisi via le lien public>>
+  pris_via_login : varchar(50) <<nul = prise ordinaire ; login du lecteur qui a pris l'article pour un tiers (nom dans pris_par_nom)>>
   pris_le : timestamp
   * wishlist_id : bigint <<FK>>
 }

@@ -2,6 +2,27 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.13.0] - 2026-11-10
+
+### Added
+- **Prise « de la part de… »** : sur la vue d'une wishlist partagée, un second bouton à côté de « Je le prends » ouvre une popup de saisie du nom d'un tiers (obligatoire, nettoyé des caractères de contrôle, 100 caractères maximum, sans préremplissage ni mémorisation dans le navigateur). L'article est affiché « Pris par Marie (via bob) ».
+  - `POST /wishlists/{id}/souhaits/{sid}/pris-pour` (`SouhaitController`, MVC HTML, CSRF actif) ; `SouhaitService.prendrePour` vérifie les droits de lecteur côté serveur (propriétaire et non-lecteurs : 403) et la prise reste atomique.
+  - Nouvelle colonne nullable `souhait.pris_via_login` (login du lecteur auteur de la prise), compatible SQLite et PostgreSQL, documentée dans `docs/database.puml`.
+- Tests : 18 nouveaux tests (service, lien public, web, transfert). Total de la suite : 352.
+
+### Changed
+- Un article pris pour un tiers se libère sans avertissement ni confirmation par tout lecteur ou visiteur, invités du lien public compris (`SouhaitService.confirmationRequise` reçoit un indicateur « pris pour un tiers »).
+- La validation du nom saisi est mutualisée dans `SouhaitService.nomSaisi` (réutilisée par la wishlist publique, comportement inchangé).
+- Format d'export passé en version 2 (colonne `pris_via_login`) : un fichier exporté par la version précédente est refusé à l'import avec le message de version incompatible.
+- Les avis au lecteur nomment uniquement le tiers (sans mention « via »). La vue du propriétaire reste aveugle.
+- Version du `pom.xml` portée à 0.13.0.
+
+### Variables d'environnement
+- Aucune variable nouvelle ou modifiée. Une colonne nullable est ajoutée par Hibernate (`ddl-auto`) sans migration.
+
+### Fixed
+- Aucun.
+
 ## [0.12.0] - 2026-11-09
 
 ### Added

@@ -21,8 +21,6 @@ public class WishlistPubliqueService {
     public record Consultation(Profil profil, Long wishlistId, VueWishlistLecteur vue) {
     }
 
-    static final int NOM_MAX = 100;
-
     private final WishlistRepository wishlists;
     private final WishlistPartageRepository partages;
     private final SouhaitService souhaits;
@@ -90,13 +88,6 @@ public class WishlistPubliqueService {
     }
 
     static String nomInvite(String saisi) {
-        String propre = saisi == null ? "" : saisi.replaceAll("[\\p{Cntrl}\\p{Cf}]", " ").replaceAll(" +", " ").trim();
-        if (propre.isEmpty()) {
-            throw new RequeteInvalideException("Votre nom est obligatoire");
-        }
-        if (propre.length() > NOM_MAX) {
-            throw new RequeteInvalideException("Le nom est trop long (" + NOM_MAX + " caractères maximum)");
-        }
-        return propre;
+        return SouhaitService.nomSaisi(saisi);
     }
 }

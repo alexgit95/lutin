@@ -52,7 +52,7 @@ class TransfertTest extends BaseTransfertTest {
     void lExportContientToutesLesTablesDansLOrdreAvecUnEnteteVersionne() {
         String json = stable(exporter());
 
-        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":1,\"mode\":\"local\"")
+        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":2,\"mode\":\"local\"")
                 .contains("\"versionApplication\":\"").contains("\"exporteLe\":\"\"");
         int position = json.indexOf("\"tables\":{");
         for (TableTransfert table : Tables.TOUTES) {
@@ -74,6 +74,28 @@ class TransfertTest extends BaseTransfertTest {
                 .containsEntry("wishlist_partage", wishlistPartages.count()).containsEntry("avis", avis.count())
                 .containsEntry("alerte_remboursement", alertes.count());
         assertThat(compteurs.values()).allSatisfy(n -> assertThat(n).isPositive());
+    }
+
+    @Test
+    void lAuteurDUnePrisePourUnTiersEstExporteEtRestaure() {
+        byte[] sauvegarde = exporter();
+        assertThat(stable(sauvegarde)).contains("\"pris_par_nom\":\"Tante Marie\"")
+                .contains("\"pris_via_login\":\"bob\"");
+        souhaits.deleteAll();
+
+        importer(sauvegarde);
+
+        assertThat(souhaits.findAll()).filteredOn(s -> "Tante Marie".equals(s.getPrisParNom()))
+                .singleElement().satisfies(s -> assertThat(s.getPrisViaLogin()).isEqualTo("bob"));
+        assertThat(souhaits.findAll()).filteredOn(s -> "bob".equals(s.getPrisParNom()))
+                .singleElement().satisfies(s -> assertThat(s.getPrisViaLogin()).isNull());
+    }
+
+    @Test
+    void unFichierSansLaColonnePrisViaLoginEstRefuse() {
+        String json = stable(exporter());
+
+        refuse(json.replaceAll("\"pris_via_login\":(null|\"[^\"]*\"),", ""), "colonne absente");
     }
 
     @Test
@@ -143,7 +165,7 @@ class TransfertTest extends BaseTransfertTest {
     void unFichierDUneAutreVersionOuUnAutreFormatOuUnAutreModeEstRefuse() {
         String json = stable(exporter());
 
-        refuse(remplacerLePremier(json, "\"version\":1", "\"version\":2"), "Version de format incompatible");
+        refuse(remplacerLePremier(json, "\"version\":2", "\"version\":3"), "Version de format incompatible");
         refuse(remplacerLePremier(json, "\"format\":\"lutin-export\"", "\"format\":\"autre\""), "pas un export Lutin");
         refuse(remplacerLePremier(json, "\"mode\":\"local\"", "\"mode\":\"cloudflare\""), "mode");
     }

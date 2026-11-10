@@ -186,6 +186,16 @@ function copierLien(bouton) {
 
 document.addEventListener('click', (evenement) => {
     const prendre = evenement.target.closest('[data-prendre-url]');
+    const prendrePour = evenement.target.closest('[data-prendre-pour-url]');
+    if (prendrePour) {
+        const dialogue = document.getElementById('dialogue-pour');
+        const formulaire = document.getElementById('formulaire-pour');
+        formulaire.action = prendrePour.dataset.prendrePourUrl;
+        formulaire.elements.nom.value = '';
+        dialogue.showModal();
+        formulaire.elements.nom.focus();
+        return;
+    }
     if (prendre) {
         const dialogue = document.getElementById('dialogue-nom');
         const formulaire = document.getElementById('formulaire-nom');
@@ -196,7 +206,7 @@ document.addEventListener('click', (evenement) => {
         return;
     }
     if (evenement.target.closest('[data-fermer-dialogue]')) {
-        document.getElementById('dialogue-nom').close();
+        evenement.target.closest('dialog').close();
         return;
     }
     const partager = evenement.target.closest('[data-partager]');

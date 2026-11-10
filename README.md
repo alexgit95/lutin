@@ -101,8 +101,9 @@ Section distincte des listes d'achat (entrée « Wishlists » de la barre de nav
 - **Partage** : le propriétaire choisit un login dans une liste déroulante et peut retirer un partage. Seul le propriétaire voit et gère les partages ; l'administrateur n'a aucun accès particulier aux wishlists des autres.
 - **Mes wishlists / Partagées avec moi** : deux sections sur la page `/wishlists`.
 - **Article pris** : un lecteur coche « Je le prends » ; son login est alors affiché (« Pris par bob ») à tous les lecteurs. Un seul lecteur peut prendre un article, même en cas de clics simultanés.
+- **De la part de…** : à côté de « Je le prends », un lecteur partagé peut prendre un article au nom d'un proche sans compte. Une popup demande le nom (obligatoire, 100 caractères maximum, jamais prérempli) ; la tuile affiche « Pris par Marie (via bob) », bob étant le lecteur connecté. Ce bouton n'existe ni sur la page publique ni pour le propriétaire.
 - **Aveuglement du propriétaire** : le propriétaire ne voit jamais ce qui est pris, ni par qui, ni les avis. Ces données ne sont pas envoyées par le serveur (gabarit et objets de vue distincts) et ne dépendent pas de l'ordre d'affichage.
-- **Décocher** : tout lecteur peut libérer un article. S'il n'est pas celui qui l'a pris, une page d'avertissement nomme le preneur et demande une confirmation avant de libérer.
+- **Décocher** : tout lecteur peut libérer un article. S'il n'est pas celui qui l'a pris, une page d'avertissement nomme le preneur et demande une confirmation avant de libérer. Un article pris « de la part de » quelqu'un se libère sans avertissement, par tout lecteur ou visiteur (invités du lien public compris).
 - **Retrait de partage** : les articles que le lecteur avait pris restent « pris par » son nom ; ses avis pour cette wishlist sont supprimés.
 
 #### Avis aux lecteurs
@@ -124,7 +125,7 @@ Dans l'onglet **Réglages**, le propriétaire peut rendre sa wishlist publique. 
 - **Vue publique** : seulement le titre et les tuiles, sans login du propriétaire ni avis.
 - **Invité (non connecté)** : une popup demande son nom (100 caractères maximum, rempli depuis le navigateur la fois suivante) ; l'article est alors « pris par Nom (invité) ». Le nom est affiché comme du texte.
 - **Compte connecté** : s'il n'est ni propriétaire ni lecteur partagé, il prend l'article sous son login, sans popup. Le propriétaire et les lecteurs partagés sont redirigés vers leur vue habituelle.
-- **Libérer** : tout visiteur le peut. L'avertissement avec confirmation est exigé sauf pour un compte connecté qui libère un article pris sous son propre login (un invité du même nom ne compte pas).
+- **Libérer** : tout visiteur le peut. L'avertissement avec confirmation est exigé sauf pour un compte connecté qui libère un article pris sous son propre login (un invité du même nom ne compte pas) et sauf pour un article pris « de la part de » quelqu'un.
 - **Protection des pages publiques** : `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store`, CSRF actif. Aucune route d'édition n'existe sous `/p/`.
 - **Cloudflare** : l'application ne limite pas le débit. Il est recommandé d'ajouter une règle de limitation de débit sur `/p/*` devant l'application.
 

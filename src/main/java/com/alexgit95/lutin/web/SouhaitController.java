@@ -92,6 +92,19 @@ public class SouhaitController {
         return retour(wishlistId, page);
     }
 
+    @PostMapping("/{souhaitId}/pris-pour")
+    public String prendrePour(@PathVariable Long wishlistId, @PathVariable Long souhaitId,
+                              @RequestParam(required = false) String nom,
+                              @RequestParam(defaultValue = "0") int page, Principal principal,
+                              RedirectAttributes flash) {
+        try {
+            souhaits.prendrePour(wishlistId, souhaitId, principal.getName(), nom);
+        } catch (RequeteInvalideException e) {
+            flash.addFlashAttribute("erreur", e.getMessage());
+        }
+        return retour(wishlistId, page);
+    }
+
     /** Sans confirmation, un article pris par un autre n'est pas libéré : un avertissement est affiché. */
     @PostMapping("/{souhaitId}/libere")
     public String liberer(@PathVariable Long wishlistId, @PathVariable Long souhaitId,

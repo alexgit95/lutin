@@ -22,7 +22,7 @@ import static com.alexgit95.lutin.transfert.TypeColonne.TEXTE;
 public final class Tables {
 
     public static final String FORMAT = "lutin-export";
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     private static final Set<String> STATUTS = noms(Statut.values());
     private static final Set<String> TYPES_AVIS = noms(TypeAvis.values());
@@ -80,6 +80,7 @@ public final class Tables {
                     texte("pris_par_nom", "e.prisParNom", false, 100),
                     col("pris_le", "e.prisLe", INSTANT, false),
                     col("pris_par_invite", "e.prisParInvite", BOOLEEN, false),
+                    texte("pris_via_login", "e.prisViaLogin", false, 50),
                     ref("wishlist_id", "e.wishlist.id", "wishlist")),
             table("wishlist_partage", "WishlistPartage e", true,
                     id(),

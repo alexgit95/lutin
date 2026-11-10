@@ -93,9 +93,10 @@ abstract class BaseTransfertTest {
         jeton = wishlistService.rendrePublique(wishlistId, "alice");
         Long casque = souhaitService.creer(wishlistId, "alice",
                 new SouhaitCommande("Casque audio", "https://shop.example/casque", new BigDecimal("99.99"))).getId();
-        souhaitService.creer(wishlistId, "alice", new SouhaitCommande("Livre sans prix", null, null));
+        Long livre = souhaitService.creer(wishlistId, "alice", new SouhaitCommande("Livre sans prix", null, null)).getId();
         wishlistPartageService.partager(wishlistId, "alice", "bob");
         souhaitService.prendre(wishlistId, casque, "bob");
+        souhaitService.prendrePour(wishlistId, livre, "bob", "Tante Marie");
         souhaitService.modifier(wishlistId, casque, "alice",
                 new SouhaitCommande("Casque audio v2", "https://shop.example/casque", new BigDecimal("89.99")));
     }
