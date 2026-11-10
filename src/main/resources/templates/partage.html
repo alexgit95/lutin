@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Choisir une wishlist')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page etroit reception-partage">
+    <h1>Choisir une wishlist</h1>
+    <div th:replace="~{fragments :: messages}"></div>
+    <th:block th:if="${partage != null and mesWishlists != null}">
+        <ul class="cartes" th:unless="${#lists.isEmpty(mesWishlists)}">
+            <li th:each="w : ${mesWishlists}">
+                <a th:href="@{/wishlists/{id}/souhaits/nouveau(id=${w.id()},url=${partage.url()},title=${partage.titre()})}"
+                   th:text="${w.nom()}">Wishlist</a>
+            </li>
+        </ul>
+        <th:block th:if="${#lists.isEmpty(mesWishlists)}">
+            <p class="vide">Aucune wishlist pour le moment.</p>
+            <form th:action="@{/partage/wishlists}" method="post">
+                <input type="hidden" name="url" th:value="${partage.url()}">
+                <input type="hidden" name="title" th:value="${partage.titre()}">
+                <label>Nom de la wishlist
+                    <input type="text" name="nom" th:value="${nomWishlist}" maxlength="100" required>
+                </label>
+                <button type="submit">Cr&#233;er la wishlist</button>
+            </form>
+        </th:block>
+    </th:block>
+    <a th:if="${retourPartage != null}" class="bouton clair" th:href="${retourPartage}">Choisir une autre wishlist</a>
+    <p><a th:href="@{/wishlists}">Mes wishlists</a></p>
+</main>
+</body>
+</html>

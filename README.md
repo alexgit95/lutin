@@ -103,6 +103,20 @@ Pour automatiser la sauvegarde (cron, NAS, script), l'administrateur génère de
 ### PWA
 Manifeste, icônes et service worker minimal : l'application est installable sur Android (HTTPS requis, sauf `localhost`). Pas de mode hors ligne.
 
+#### Ajouter un article depuis le partage Android
+Installez Lutin depuis Chrome sur Android en HTTPS. Depuis une application qui partage un lien web, choisissez **Partager**, puis **Lutin** :
+
+1. Choisissez une de **vos wishlists**, même si vous n'en avez qu'une. Les wishlists seulement partagées avec vous ne sont pas proposées. Si vous n'en avez aucune, créez-en une sans perdre le partage, puis sélectionnez-la.
+2. Le formulaire d'ajout s'ouvre avec l'URL préremplie. Le nom reprend le titre transmis par l'application source ; sinon Lutin tente de récupérer le titre de la page avec les protections SSRF existantes. Le nom est nettoyé et limité à 100 caractères. Le prix reste vide.
+3. Corrigez ou complétez les champs, puis **Enregistrer**. Rien n'est ajouté avant cette confirmation ; **Annuler** revient à la wishlist sans créer d'article.
+
+- Si l'application transmet le lien dans le texte plutôt que dans le champ URL, le premier lien HTTP(S) valide est retenu. Une URL explicite invalide n'est pas remplacée par un autre lien. Les paramètres et fragments du lien sont conservés.
+- Le titre n'est pas garanti : les applications ne le transmettent pas toutes et certains sites refusent sa récupération. Le nom reste modifiable et peut être saisi manuellement. Sans lien exploitable, un message permet de revenir aux wishlists.
+- Le parcours nécessite une connexion réseau, une PWA installée et un navigateur compatible. Les fichiers, images seuls et liens internes à une application ne sont pas pris en charge ; Lutin ne peut pas apparaître dans tous les menus de toutes les applications. iPhone/iPad sont hors périmètre.
+- Après connexion locale, un compte déjà inscrit retrouve le partage. En production, la conservation de l'URL et du titre pendant une reconnexion Cloudflare Access doit être vérifiée sur l'environnement cible ; aucune règle Bypass n'est nécessaire pour `/partage`. Lors du premier accès sans compte, terminez le choix du pseudo puis relancez le partage.
+- Si Lutin n'apparaît pas après une mise à jour, ouvrez d'abord l'application pour permettre l'actualisation du manifeste installé. Pour la recette, une réinstallation de la PWA peut être nécessaire.
+- Les données du partage transitent dans l'URL des pages : elles peuvent apparaître dans l'historique du navigateur et les journaux d'accès de l'infrastructure. L'application n'ajoute pas de journalisation de leur contenu ni de stockage hors connexion ; les pages concernées portent `Cache-Control: no-store` et `Referrer-Policy: no-referrer`.
+
 ### Wishlists
 Section distincte des listes d'achat (entrée « Wishlists » de la barre de navigation, page `/wishlists`) : chacun exprime ses envies et ses proches se coordonnent sans doublon.
 

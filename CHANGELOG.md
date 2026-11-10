@@ -2,6 +2,21 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.15.0] - 2026-11-10
+
+### Added
+- **Réception du partage Android** : déclaration `share_target` GET dans le manifeste de la PWA, vers `/partage` (`ReceptionPartageController`, MVC HTML). Choix explicite parmi les wishlists personnelles, création d'une première wishlist avec conservation du partage et ouverture du formulaire existant avec URL et titre préremplis, prix vide. Aucun article n'est créé avant confirmation.
+- `PartageLien` : validation bornée des entrées, priorité à l'URL explicite, extraction du premier lien HTTP(S) valide du texte si nécessaire, conservation des paramètres et fragments, nettoyage et limitation du titre à 100 caractères. Le titre transmis est prioritaire ; à défaut, récupération via `UrlTitleService` après vérification des droits, avec saisie manuelle en cas d'échec.
+- Tests unitaires et web du partage, du préremplissage, de la reprise après connexion locale, des contrôles Cloudflare, du manifeste, de l'encodage, du CSRF, du rendu échappé et des protections SSRF. La recette du menu natif Android et de la reconnexion Cloudflare réelle reste distincte des tests automatisés.
+
+### Changed
+- Le formulaire d'ajout d'article accepte un contexte partagé sans modifier le parcours manuel. Une destination supprimée ou inaccessible propose un retour au choix en conservant le partage, tout en maintenant le refus 403.
+- Les pages de réception et de préremplissage portent `Cache-Control: no-store` et `Referrer-Policy: no-referrer`. Aucun brouillon en base ou stockage hors connexion n'est ajouté ; le service worker reste inchangé.
+- Version du `pom.xml` portée à 0.15.0. Aucun changement de schéma, de variable d'environnement, de dépendance ou de pipeline.
+
+### Fixed
+- Le contrôle de propriété précède désormais la récupération du titre lors des POST de création et de modification d'article, y compris si le formulaire contient une erreur de liaison.
+
 ## [0.14.0] - 2026-11-10
 
 ### Added

@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -28,6 +29,21 @@ class PwaTest {
                 .andExpect(content().string(containsString("\"start_url\": \"/\"")))
                 .andExpect(content().string(containsString("icon-192.png")))
                 .andExpect(content().string(containsString("icon-512.png")));
+    }
+
+    @Test
+    void leManifesteDeclareLaReceptionGetDesLiensSansChangerLeScope() throws Exception {
+        mvc.perform(get("/manifest.webmanifest")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.share_target.action").value("/partage"))
+                .andExpect(jsonPath("$.share_target.method").value("GET"))
+                .andExpect(jsonPath("$.share_target.params.url").value("url"))
+                .andExpect(jsonPath("$.share_target.params.title").value("title"))
+                .andExpect(jsonPath("$.share_target.params.text").value("text"))
+                .andExpect(jsonPath("$.share_target.params.files").doesNotExist())
+                .andExpect(jsonPath("$.scope").value("/"))
+                .andExpect(jsonPath("$.start_url").value("/"))
+                .andExpect(jsonPath("$.display").value("standalone"))
+                .andExpect(jsonPath("$.icons.length()").value(2));
     }
 
     @Test

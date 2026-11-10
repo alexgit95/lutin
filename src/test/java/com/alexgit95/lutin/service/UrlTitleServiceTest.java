@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -86,6 +87,21 @@ class UrlTitleServiceTest {
     @Test
     void refuseUneRedirectionVersUneAdresseInterne() {
         assertThat(permissif.titre(url("/vers-interne"))).isEmpty();
+    }
+
+    @Test
+    void uneAdresseInterditeParmiLesReponsesDnsBloqueLaRequete() throws Exception {
+        AtomicInteger appels = new AtomicInteger();
+        serveur.createContext("/interdit", echange -> {
+            appels.incrementAndGet();
+            echange.sendResponseHeaders(200, -1);
+            echange.close();
+        });
+        UrlTitleService mixte = new UrlTitleService(hote -> new InetAddress[]{
+                InetAddress.getByAddress(new byte[]{8, 8, 8, 8}), InetAddress.getLoopbackAddress()},
+                UrlTitleService::estAdresseInterne);
+        assertThat(mixte.titre(url("/interdit"))).isEmpty();
+        assertThat(appels.get()).isZero();
     }
 
     @Test

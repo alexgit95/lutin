@@ -3,6 +3,7 @@ package com.alexgit95.lutin.security;
 import com.alexgit95.lutin.domain.Utilisateur;
 import com.alexgit95.lutin.repository.ListeAchatRepository;
 import com.alexgit95.lutin.repository.UtilisateurRepository;
+import com.alexgit95.lutin.service.PartageLien;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -116,6 +118,21 @@ class AccesCloudflareWebTest {
         mvc.perform(get("/listes").with(jeton(ALICE))).andExpect(status().isOk()).andExpect(view().name("home"));
         mvc.perform(get("/").with(jeton(ALICE))).andExpect(status().isOk()).andExpect(view().name("accueil"));
     }
+
+        @Test
+        void lePartageExigeUneIdentiteAccessEtConserveLesDonneesRecues() throws Exception {
+        String url = "https://shop.example/objet?a=1&b=%2F+z#fiche";
+        mvc.perform(get("/partage").param("url", url)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/partage").with(jetonBrut("invalide")).param("url", url))
+            .andExpect(status().isUnauthorized());
+        compte("pseudo-a", ALICE, false);
+        mvc.perform(get("/partage").with(jeton(ALICE)).param("url", url).param("title", "Objet"))
+            .andExpect(status().isOk()).andExpect(view().name("partage"))
+            .andExpect(model().attribute("partage", new PartageLien(url, "Objet")))
+            .andExpect(header().string("Referrer-Policy", "no-referrer"));
+        mvc.perform(post("/partage/wishlists").with(jeton(ALICE)).param("url", url).param("nom", "Noel"))
+            .andExpect(status().isForbidden());
+        }
 
     @Test
     void lAdresseEstNormaliseeAvantLaRechercheDuCompte() throws Exception {

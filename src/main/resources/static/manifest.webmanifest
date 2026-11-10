@@ -4,6 +4,15 @@
   "description": "Gestion des achats de cadeaux avec workflow et budgets",
   "start_url": "/",
   "scope": "/",
+  "share_target": {
+    "action": "/partage",
+    "method": "GET",
+    "params": {
+      "url": "url",
+      "title": "title",
+      "text": "text"
+    }
+  },
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f4f6fb",

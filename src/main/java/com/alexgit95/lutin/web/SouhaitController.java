@@ -1,8 +1,12 @@
 package com.alexgit95.lutin.web;
 
 import com.alexgit95.lutin.service.AccesWishlistService;
+import com.alexgit95.lutin.service.PartageLien;
 import com.alexgit95.lutin.service.RequeteInvalideException;
 import com.alexgit95.lutin.service.SouhaitService;
+import com.alexgit95.lutin.service.UrlTitleService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -22,21 +26,53 @@ public class SouhaitController {
 
     private final SouhaitService souhaits;
     private final AccesWishlistService acces;
+    private final UrlTitleService titres;
 
-    public SouhaitController(SouhaitService souhaits, AccesWishlistService acces) {
+    public SouhaitController(SouhaitService souhaits, AccesWishlistService acces, UrlTitleService titres) {
         this.souhaits = souhaits;
         this.acces = acces;
+        this.titres = titres;
     }
 
     @GetMapping("/nouveau")
-    public String nouveau(@PathVariable Long wishlistId, Principal principal, Model model) {
-        acces.proprietaire(wishlistId, principal.getName());
-        return formulaire(model, wishlistId, null, new SouhaitForm());
+    public String nouveau(@PathVariable Long wishlistId, @RequestParam(required = false) String url,
+                          @RequestParam(required = false) String title,
+                          Principal principal, Model model, HttpServletResponse reponse) {
+        ReceptionPartageController.confidentiel(reponse);
+        PartageLien partage = null;
+        if (url != null || title != null) {
+            try {
+                partage = PartageLien.depuis(url, title, null);
+            } catch (RequeteInvalideException erreur) {
+                model.addAttribute("erreur", erreur.getMessage());
+                return "partage";
+            }
+        }
+        try {
+            acces.proprietaire(wishlistId, principal.getName());
+        } catch (AccessDeniedException erreur) {
+            if (partage == null) {
+                throw erreur;
+            }
+            reponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            model.addAttribute("erreur", "Cette wishlist n'est plus accessible.");
+            model.addAttribute("retourPartage", ReceptionPartageController.retour(partage));
+            return "partage";
+        }
+        SouhaitForm form = new SouhaitForm();
+        if (partage != null) {
+            form.setUrl(partage.url());
+            form.setNom(partage.titre().isEmpty()
+                    ? titres.titre(partage.url()).map(PartageLien::nettoyerTitre).orElse("") : partage.titre());
+        }
+        return formulaire(model, wishlistId, null, form);
     }
 
     @PostMapping
     public String creer(@PathVariable Long wishlistId, @ModelAttribute("form") SouhaitForm form,
-                        BindingResult liaison, Principal principal, Model model) {
+                        BindingResult liaison, Principal principal, Model model, HttpServletResponse reponse) {
+        ReceptionPartageController.confidentiel(reponse);
+        acces.proprietaire(wishlistId, principal.getName());
         if (liaison.hasErrors()) {
             model.addAttribute("erreur", "Prix invalide");
             return formulaire(model, wishlistId, null, form);
@@ -61,6 +97,7 @@ public class SouhaitController {
     public String modifier(@PathVariable Long wishlistId, @PathVariable Long souhaitId,
                            @ModelAttribute("form") SouhaitForm form, BindingResult liaison,
                            Principal principal, Model model) {
+        acces.proprietaire(wishlistId, principal.getName());
         if (liaison.hasErrors()) {
             model.addAttribute("erreur", "Prix invalide");
             return formulaire(model, wishlistId, souhaitId, form);
