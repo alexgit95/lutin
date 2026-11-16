@@ -124,6 +124,14 @@ class ListesWebTest {
                 .andExpect(content().string(containsString("id=\"workflow\"")))
                 .andExpect(content().string(containsString("data-statut=\"A_ACHETER\"")))
                 .andExpect(content().string(containsString("Cadeau secret")))
+                .andExpect(content().string(containsString("<h3>Maman</h3>")))
+                .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
+                .andExpect(content().string(containsString("aria-label=\"Actions pour Cadeau visible\"")))
+                .andExpect(content().string(containsString("/cadeaux/" + visibleId + "/modifier")))
+                .andExpect(content().string(containsString("/cadeaux/" + visibleId + "/supprimer")))
+                .andExpect(content().string(containsString("return confirm('Supprimer ce cadeau ?')")))
+                .andExpect(content().string(not(containsString("<th>Pour</th>"))))
+                .andExpect(content().string(not(containsString("data-label=\"Pour\""))))
                 .andExpect(content().string(containsString("secret.example")))
                 .andExpect(content().string(containsString("/personnes")))
                 .andExpect(content().string(not(containsString("Ajouter"))));
@@ -145,6 +153,7 @@ class ListesWebTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("liste-fragments :: cadeauxLot"))
                 .andExpect(content().string(containsString("Lot 48")))
+                .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
                 .andExpect(content().string(not(containsString("Lot 00"))))
                 .andExpect(content().string(not(containsString("Charger la suite"))));
     }
@@ -155,6 +164,10 @@ class ListesWebTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Cadeaux masqués")))
                 .andExpect(content().string(containsString("Cadeau masqué")))
+                .andExpect(content().string(containsString("colspan=\"4\"")))
+                .andExpect(content().string(not(containsString("menu-actions"))))
+                .andExpect(content().string(not(containsString("<th>Pour</th>"))))
+                .andExpect(content().string(not(containsString("data-label=\"Pour\""))))
                 .andExpect(content().string(not(containsString("Cadeau secret"))))
                 .andExpect(content().string(not(containsString("secret.example"))))
                 .andExpect(content().string(not(containsString("12,34"))));
@@ -187,6 +200,8 @@ class ListesWebTest {
                         .header("HX-Request", "true").param("statut", "COMMANDE"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-statut=\"COMMANDE\"")))
+                .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
+                .andExpect(content().string(not(containsString("data-label=\"Pour\""))))
                 .andExpect(content().string(containsString("aria-label=\"À acheter: 1 cadeaux\"")))
                 .andExpect(content().string(containsString("aria-label=\"Commandé: 1 cadeaux\"")));
     }

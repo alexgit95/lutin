@@ -2,6 +2,31 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.16.2] - 2026-11-16
+
+### Changed
+- Le dashboard regroupe « Modifier » et « Supprimer » dans un menu compact par cadeau, réservé au propriétaire. Il réutilise le menu accessible des personnes, conserve la confirmation de suppression et reste utilisable après les mises à jour HTMX.
+- Version du `pom.xml` portée à 0.16.2. Aucun changement de schéma ni de pipeline.
+
+## [0.16.1] - 2026-11-16
+
+### Changed
+- Le dashboard n'affiche plus de colonne « Pour » : le destinataire reste indiqué par l'en-tête de chaque groupe. Les colonnes et la ligne des cadeaux masqués sont adaptées pour les vues propriétaire et lecteur, y compris sur mobile.
+- Version du `pom.xml` portée à 0.16.1. Aucun changement de schéma ni de pipeline.
+
+## [0.16.0] - 2026-11-16
+
+### Added
+- La page d'administration affiche la version Maven et le SHA abrégé du build ; les informations manquantes sont indiquées explicitement.
+
+### Changed
+- Les groupes de cadeaux partagent des colonnes alignées et les titres longs passent sur plusieurs lignes. Sur téléphone, les données et les actions sont réorganisées pour rester accessibles sans défilement horizontal.
+- La navigation et l'espace réservé à la barre fixe des cinq statuts s'adaptent aux écrans étroits et aux zones de sécurité.
+- Version du `pom.xml` portée à 0.16.0. Aucun changement de schéma ni de pipeline.
+
+### Fixed
+- La cellule des actions conserve son comportement de cellule de tableau au lieu de perturber l'alignement des lignes.
+
 ## [0.15.0] - 2026-11-10
 
 ### Added

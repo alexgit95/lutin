@@ -4,7 +4,9 @@ import com.alexgit95.lutin.config.LutinProperties;
 import com.alexgit95.lutin.service.CleApiService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,12 +22,20 @@ public class AdminController {
     private final LutinProperties properties;
     private final CleApiService clesApi;
     private final boolean modeCloudflare;
+    private final String versionBuild;
 
     public AdminController(LutinProperties properties, CleApiService clesApi,
-                           @Value("${lutin.acces.mode:local}") String mode) {
+                           @Value("${lutin.acces.mode:local}") String mode,
+                           ObjectProvider<BuildProperties> build) {
         this.properties = properties;
         this.clesApi = clesApi;
         this.modeCloudflare = "cloudflare".equals(mode);
+        BuildProperties informations = build.getIfAvailable();
+        String version = informations == null ? null : informations.getVersion();
+        String commit = informations == null ? null : informations.get("git.commit");
+        this.versionBuild = (version == null || version.isBlank() ? "inconnue" : version)
+                + " - " + (commit != null && commit.matches("[0-9a-fA-F]{7,64}")
+                ? commit.substring(0, 7) : "inconnu");
     }
 
     @GetMapping("/admin")
@@ -56,6 +66,7 @@ public class AdminController {
 
     private String page(Model model) {
         model.addAttribute("modeCloudflare", modeCloudflare);
+        model.addAttribute("versionBuild", versionBuild);
         // Pas de clé d'invitation en mode cloudflare : l'accès est géré dans Cloudflare Access.
         model.addAttribute("invitationKey", modeCloudflare ? null : properties.invitationKey());
         model.addAttribute("clesApi", clesApi.lister());

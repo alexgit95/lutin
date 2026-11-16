@@ -9,7 +9,7 @@ Stack : Java 25, Spring Boot 4, Spring Security (session cookie + CSRF), Spring 
 ### Compte
 - **En prod**, l'authentification est assurée par **Cloudflare Access** : pas de formulaire de connexion, pas d'inscription ni de clé d'invitation. À la **première connexion**, l'utilisateur choisit un **pseudo** (4 à 50 caractères : lettres, chiffres, point, tiret et underscore ; unique sans tenir compte de la casse ; immuable ; `admin`, `administrateur`, `root`, `lutin`, `system` et `support` sont réservés). C'est le seul nom visible dans l'application : l'adresse email n'est jamais affichée ni journalisée, et n'est conservée que sous forme de HMAC-SHA256.
 - **En dev local**, rien ne change : inscription avec un login, un mot de passe (8 à 72 caractères) et la **clé d'invitation** (`INVITATION_KEY`, `lutin-dev` par défaut).
-- Le **premier compte créé est administrateur** (en prod : le premier à avoir choisi son pseudo). L'écran `/admin` est réservé à l'administrateur ; il affiche la clé d'invitation en dev et propose, dans les deux modes, la sauvegarde et la restauration de toute la base (voir « Sauvegarde et restauration »).
+- Le **premier compte créé est administrateur** (en prod : le premier à avoir choisi son pseudo). L'écran `/admin` est réservé à l'administrateur ; il affiche la version du build et les sept premiers caractères du SHA de son commit, ou « inconnu » si celui-ci n'a pas été fourni. Il affiche la clé d'invitation en dev et propose, dans les deux modes, la sauvegarde et la restauration de toute la base (voir « Sauvegarde et restauration »).
 
 ### Listes d'achat
 La landing page (`/`) propose deux grandes tuiles : **Mes listes d'achat** (`/listes`) et **Mes wishlists** (`/wishlists`, avec le nombre d'avis en attente). Les listes se gèrent depuis `/listes`.
@@ -56,7 +56,9 @@ Dans l'onglet **Personnes**, si vous possédez au moins une autre liste, le pann
 Les cadeaux masqués restent comptés dans les totaux. Pour un lecteur, la répartition par statut exclut les cadeaux masqués.
 
 ### Liste des cadeaux du dashboard
-- Les cadeaux sont regroupés par personne destinataire. Deux personnes portant le même nom restent dans des groupes distincts. Pour un lecteur, tous les cadeaux masqués forment un seul groupe « Cadeaux masqués » placé après les autres, dans l'ordre de création : leur place ne révèle ni leur nom ni leur destinataire.
+- Les cadeaux sont regroupés par personne destinataire, indiquée dans l'en-tête du groupe sans colonne supplémentaire. Deux personnes portant le même nom restent dans des groupes distincts. Pour un lecteur, tous les cadeaux masqués forment un seul groupe « Cadeaux masqués » placé après les autres, dans l'ordre de création : leur place ne révèle ni leur nom ni leur destinataire.
+- Les colonnes sont alignées entre groupes et les noms longs passent sur plusieurs lignes. Sur téléphone, les informations et actions restent accessibles sans défilement horizontal.
+- Pour le propriétaire, le bouton `⋯` de chaque cadeau regroupe les actions « Modifier » et « Supprimer » ; la suppression demande une confirmation. Le menu se ferme au clic ailleurs ou avec Échap et n'est pas proposé au lecteur.
 - Pas de pagination visible : les cadeaux se chargent par lots de 50 au fil du défilement. Un groupe qui s'étend sur deux lots continue sans répéter son en-tête. Si un chargement échoue, un bouton « Réessayer » apparaît et les cadeaux déjà affichés sont conservés.
 - Le filtre par tag s'applique à la liste, pas aux compteurs.
 
@@ -72,7 +74,7 @@ Les achats passent par le compte courant, puis un virement de remboursement part
 - **Fuseau horaire** : la « date du jour » suit `lutin.fuseau-horaire` (défaut `Europe/Paris`).
 
 ### Barre de workflow
-Une barre fixée en bas de l'écran affiche le nombre de cadeaux par statut (À acheter, Commandé, Livré, Emballé, Remis). Ces nombres portent sur toute la liste : ils ne dépendent ni du filtre par tag ni des lots chargés. Pour un lecteur, ils excluent les cadeaux masqués.
+Une barre fixée en bas de l'écran affiche le nombre de cadeaux par statut (À acheter, Commandé, Livré, Emballé, Remis). Elle s'adapte à la largeur du téléphone et laisse accessible le bas de la liste. Ces nombres portent sur toute la liste : ils ne dépendent ni du filtre par tag ni des lots chargés. Pour un lecteur, ils excluent les cadeaux masqués.
 
 Quand le propriétaire change le statut d'un cadeau, seule sa ligne et la barre sont mises à jour, sans recharger la liste ni perdre la position de défilement. Un jeton portant le nom du cadeau rejoint alors l'étape cible et les deux compteurs concernés s'animent. Avec la préférence système « réduire les animations », les compteurs changent sans mouvement.
 

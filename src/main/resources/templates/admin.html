@@ -4,6 +4,7 @@
 <body class="auth">
 <main class="card">
     <h1>Administration</h1>
+    <p>Version : <span id="version-build" th:text="${versionBuild}">inconnue - inconnu</span></p>
     <div th:replace="~{fragments :: messages}"></div>
     <th:block th:if="${modeCloudflare}">
         <p>Les adresses autorisées sont gérées dans Cloudflare Access.</p>

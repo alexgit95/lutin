@@ -1,24 +1,31 @@
 package com.alexgit95.lutin.web;
 
+import com.alexgit95.lutin.config.LutinProperties;
 import com.alexgit95.lutin.repository.ApiKeyRepository;
 import com.alexgit95.lutin.service.CleApiService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.ui.ExtendedModelMap;
 
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,6 +59,7 @@ class AdminCleApiWebTest {
     @Test
     void lEcranAdminAfficheLaSectionDesClesEtAucuneCleSiAucuneNExiste() throws Exception {
         mvc.perform(get("/admin").with(admin())).andExpect(status().isOk())
+                                .andExpect(content().string(containsString("id=\"version-build\"")))
                 .andExpect(content().string(containsString("Clés d'API de sauvegarde")))
                 .andExpect(content().string(containsString("action=\"/admin/cles-api\"")))
                 .andExpect(content().string(containsString("Aucune clé")))
@@ -63,6 +71,7 @@ class AdminCleApiWebTest {
         MvcResult resultat = mvc.perform(post("/admin/cles-api").with(admin()).with(csrf()).param("nom", "nas-backup"))
                 .andExpect(status().isOk()).andExpect(view().name("admin"))
                 .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(content().string(containsString("id=\"version-build\"")))
                 .andExpect(content().string(containsString("ne sera plus affichée")))
                 .andReturn();
         Matcher m = Pattern.compile("id=\"cle-generee\">(lutin_[A-Za-z0-9_-]{43})<").matcher(
@@ -81,6 +90,33 @@ class AdminCleApiWebTest {
                 .andExpect(content().string(containsString("Jamais utilisée")));
         mvc.perform(get("/api/sauvegarde").header("Authorization", "Bearer " + cle)).andExpect(status().isOk());
     }
+
+        @Test
+        void lesInformationsDeBuildSontFormateesEtFacultatives() {
+                verifierVersion(null, "inconnue - inconnu");
+                Properties valeurs = new Properties();
+                valeurs.setProperty("version", "1.2.3");
+                valeurs.setProperty("git.commit", "a1b2c3d4567890");
+                verifierVersion(new BuildProperties(valeurs), "1.2.3 - a1b2c3d");
+                valeurs.setProperty("git.commit", "unknown");
+                verifierVersion(new BuildProperties(valeurs), "1.2.3 - inconnu");
+                valeurs.remove("git.commit");
+                verifierVersion(new BuildProperties(valeurs), "1.2.3 - inconnu");
+                valeurs.setProperty("git.commit", "abcdef");
+                verifierVersion(new BuildProperties(valeurs), "1.2.3 - inconnu");
+                valeurs.remove("version");
+                valeurs.setProperty("git.commit", "0123456789");
+                verifierVersion(new BuildProperties(valeurs), "inconnue - 0123456");
+        }
+
+        private void verifierVersion(BuildProperties informations, String attendu) {
+                ObjectProvider<BuildProperties> fournisseur = mock();
+                when(fournisseur.getIfAvailable()).thenReturn(informations);
+                AdminController controleur = new AdminController(new LutinProperties("invitation"), service, "local", fournisseur);
+                ExtendedModelMap modele = new ExtendedModelMap();
+                assertThat(controleur.admin(modele)).isEqualTo("admin");
+                assertThat(modele.get("versionBuild")).isEqualTo(attendu);
+        }
 
     @Test
     void lEcranMontreLesDatesDeCreationEtDeDerniereUtilisation() throws Exception {

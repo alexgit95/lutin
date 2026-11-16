@@ -240,6 +240,14 @@ function fermerMenus(sauf) {
 }
 
 document.addEventListener('click', (evenement) => fermerMenus(evenement.target.closest('details.menu-actions')));
+document.addEventListener('toggle', (evenement) => {
+    const menu = evenement.target;
+    if (!(menu instanceof HTMLDetailsElement) || !menu.matches('.groupe-cadeaux .menu-actions')) return;
+    menu.classList.remove('menu-en-dessous');
+    if (menu.open && menu.querySelector('.menu-liste').getBoundingClientRect().top < 0) {
+        menu.classList.add('menu-en-dessous');
+    }
+}, true);
 document.addEventListener('keydown', (evenement) => {
     if (evenement.key === 'Escape') {
         fermerMenus(null);

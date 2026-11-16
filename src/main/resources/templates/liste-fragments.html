@@ -8,7 +8,7 @@
         <div class="defilement">
             <table>
                 <thead>
-                <tr><th>Cadeau</th><th>Pour</th><th>Prix</th><th>Tags</th><th>Statut</th><th th:unless="${lot.lecteur()}"></th></tr>
+                <tr><th>Cadeau</th><th>Prix</th><th>Tags</th><th>Statut</th><th th:unless="${lot.lecteur()}"></th></tr>
                 </thead>
                 <tbody>
                 <th:block th:each="cadeau : ${groupe.cadeaux()}">
@@ -28,7 +28,7 @@
 <th:block th:fragment="ligneCadeau(cadeau, lot, statuts)">
     <tr th:id="${cadeau.id() == null ? null : 'cadeau-' + cadeau.id()}" class="cadeau-ligne"
         th:classappend="${cadeau.masque()} ? ' masque'" th:attr="data-statut=${cadeau.statut()}">
-        <td th:if="${lot.lecteur() and cadeau.masque()}" colspan="5">
+        <td th:if="${lot.lecteur() and cadeau.masque()}" colspan="4">
             <span class="cadeau-nom cache">Cadeau masqué</span>
         </td>
         <th:block th:unless="${lot.lecteur() and cadeau.masque()}">
@@ -38,10 +38,9 @@
                 <small th:if="${cadeau.masque()}" class="cache">masqué</small>
                 <small th:if="${cadeau.pourTiers()}" class="tiers">pour un tiers</small>
             </td>
-            <td th:text="${cadeau.personne()}">Maman</td>
-            <td><span th:replace="~{fragments :: montant(${cadeau.prix()})}"></span></td>
-            <td><span class="tag" th:each="t : ${cadeau.tags()}" th:text="${t}">tag</span></td>
-            <td>
+            <td data-label="Prix"><span th:replace="~{fragments :: montant(${cadeau.prix()})}"></span></td>
+            <td data-label="Tags"><span class="tag" th:each="t : ${cadeau.tags()}" th:text="${t}">tag</span></td>
+            <td data-label="Statut">
                 <span th:if="${lot.lecteur()}" th:class="'pastille st-' + ${cadeau.statut()}" th:text="${cadeau.statut().libelle}">Statut</span>
                 <form th:unless="${lot.lecteur()}" class="statut-form"
                       th:action="@{/listes/{id}/cadeaux/{cid}/statut(id=${lot.listeId()},cid=${cadeau.id()})}" method="post"
@@ -58,11 +57,16 @@
             </td>
         </th:block>
         <td th:unless="${lot.lecteur()}" class="mini">
-            <a th:href="@{/listes/{id}/cadeaux/{cid}/modifier(id=${lot.listeId()},cid=${cadeau.id()})}">modifier</a>
-            <form th:action="@{/listes/{id}/cadeaux/{cid}/supprimer(id=${lot.listeId()},cid=${cadeau.id()})}" method="post" class="inline"
-                  onsubmit="return confirm('Supprimer ce cadeau ?')">
-                <button type="submit" class="lien danger">supprimer</button>
-            </form>
+            <details class="menu-actions">
+                <summary th:attr="aria-label='Actions pour ' + ${cadeau.nom()}" title="Actions">&#8943;</summary>
+                <div class="menu-liste">
+                    <a th:href="@{/listes/{id}/cadeaux/{cid}/modifier(id=${lot.listeId()},cid=${cadeau.id()})}">Modifier</a>
+                    <form th:action="@{/listes/{id}/cadeaux/{cid}/supprimer(id=${lot.listeId()},cid=${cadeau.id()})}" method="post"
+                          onsubmit="return confirm('Supprimer ce cadeau ?')">
+                        <button type="submit" class="lien danger">Supprimer</button>
+                    </form>
+                </div>
+            </details>
         </td>
     </tr>
 </th:block>
