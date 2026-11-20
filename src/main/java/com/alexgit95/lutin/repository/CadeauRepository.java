@@ -19,10 +19,13 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
     String REMBOURSABLE = "c.pourTiers = false and c.prix is not null "
             + "and c.statut <> com.alexgit95.lutin.domain.Statut.A_ACHETER";
 
-    @EntityGraph(attributePaths = "personne")
+    String REMBOURSABLE_TIERS = "c.pourTiers = true and c.tiers is not null and c.prix is not null "
+            + "and c.statut <> com.alexgit95.lutin.domain.Statut.A_ACHETER";
+
+    @EntityGraph(attributePaths = {"personne", "tiers"})
     Page<Cadeau> findByListeId(Long listeId, Pageable pageable);
 
-    @EntityGraph(attributePaths = "personne")
+    @EntityGraph(attributePaths = {"personne", "tiers"})
     Page<Cadeau> findByListeIdAndTagsId(Long listeId, Long tagId, Pageable pageable);
 
     // Un masqué n'a jamais de tag pour un lecteur : il ne ressort pas d'un filtre.
@@ -41,6 +44,23 @@ public interface CadeauRepository extends JpaRepository<Cadeau, Long> {
     long countByPersonneId(Long personneId);
 
     List<Cadeau> findByPersonneIdAndRembourseLeIsNotNull(Long personneId);
+
+    boolean existsByTiersId(Long tiersId);
+
+    boolean existsByPersonneIdAndTiersRembourseLeIsNotNull(Long personneId);
+
+    @Query("select c.tiers.nom, coalesce(sum(case when c.tiersRembourseLe is null then c.prix end), 0) "
+            + "from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE_TIERS
+            + " group by c.tiers.id, c.tiers.nom order by c.tiers.nom, c.tiers.id")
+    List<Object[]> sommesParTiers(@Param("listeId") Long listeId);
+
+    @EntityGraph(attributePaths = {"personne", "tiers"})
+    @Query(value = "select c from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE_TIERS
+            + " order by case when c.tiersRembourseLe is null then 0 else 1 end, c.tiers.nom, c.tiers.id, c.nom, c.id",
+            countQuery = "select count(c) from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE_TIERS)
+    Page<Cadeau> findRemboursablesParTiers(@Param("listeId") Long listeId, Pageable pageable);
+
+    Page<Cadeau> findByListeIdAndPourTiersTrueAndTiersIsNullOrderByNomAscIdAsc(Long listeId, Pageable pageable);
 
     @EntityGraph(attributePaths = "personne")
     @Query(value = "select c from Cadeau c where c.liste.id = :listeId and " + REMBOURSABLE

@@ -75,7 +75,7 @@ class ParcoursListesTest {
 
     private Cadeau ajouter(String nom, String prix, Statut statut, boolean masque, boolean tiers) {
         CadeauCommande commande = new CadeauCommande(nom, null, prix == null ? null : new BigDecimal(prix),
-                mamanId, masque, tiers, Set.of());
+                mamanId, masque, tiers, Set.of(), tiers ? mamanId : null);
         Cadeau cadeau = cadeauxService.creer(listeId, "alice", commande);
         cadeauxService.changerStatut(listeId, cadeau.getId(), "alice", statut);
         return cadeau;

@@ -2,6 +2,15 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.17.0] - 2026-11-20
+
+### Added
+- Les cadeaux achetés pour un tiers peuvent être attribués à une personne de la liste. La sous-vue « Tiers » montre le reste à recevoir par personne et permet d'enregistrer ou d'annuler un remboursement intégral par cadeau.
+- Deux colonnes facultatives conservent le tiers et la date de règlement ; les sauvegardes antérieures restent importables.
+
+### Changed
+- Le suivi des virements est conservé dans la sous-vue « Épargne ». Les budgets et le pipeline restent inchangés.
+
 ## [0.16.3] - 2026-11-16
 
 ### Changed

@@ -138,7 +138,11 @@ public final class LecteurExport {
         }
         for (int i = 0; i < taille; i++) {
             if (!vues[i]) {
-                throw erreur(table, numero, table.colonnes().get(i), "colonne absente");
+                Colonne colonne = table.colonnes().get(i);
+                if (!"cadeau".equals(table.nom())
+                        || !("tiers_id".equals(colonne.nom()) || "tiers_rembourse_le".equals(colonne.nom()))) {
+                    throw erreur(table, numero, colonne, "colonne absente");
+                }
             }
         }
         return valeurs;

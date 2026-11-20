@@ -32,6 +32,11 @@
         </fieldset>
         <label class="case"><input type="checkbox" th:field="*{masque}"> Masqué pour les lecteurs du partage</label>
         <label class="case"><input type="checkbox" th:field="*{pourTiers}"> Acheté pour le compte d'un tiers (exclu des budgets)</label>
+        <label for="tiersId">Acheté pour le compte de</label>
+        <select th:field="*{tiersId}">
+            <option value="">Sélectionner un tiers</option>
+            <option th:each="personne : ${personnes}" th:value="${personne.id()}" th:text="${personne.nom()}"></option>
+        </select>
         <div class="ligne">
             <button type="submit">Enregistrer</button>
             <a class="bouton clair" th:href="@{/listes/{id}(id=${listeId})}">Annuler</a>

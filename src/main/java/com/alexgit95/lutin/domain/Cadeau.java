@@ -53,6 +53,13 @@ public class Cadeau {
     @Column(name = "pour_tiers", nullable = false)
     private boolean pourTiers;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tiers_id")
+    private Personne tiers;
+
+    @Column(name = "tiers_rembourse_le")
+    private LocalDate tiersRembourseLe;
+
     // Facultative : nul = non remboursé. Jamais exposée à un lecteur.
     @Column(name = "rembourse_le")
     private LocalDate rembourseLe;
@@ -75,5 +82,9 @@ public class Cadeau {
     /** Même règle que « Déjà déboursé » : l'argent a quitté le compte courant. */
     public boolean estRemboursable() {
         return !pourTiers && prix != null && statut != Statut.A_ACHETER;
+    }
+
+    public boolean estRemboursableParTiers() {
+        return pourTiers && tiers != null && prix != null && statut != Statut.A_ACHETER;
     }
 }

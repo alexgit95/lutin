@@ -36,7 +36,8 @@
                 <a class="cadeau-nom" th:if="${cadeau.url()}" th:href="${cadeau.url()}" target="_blank" rel="noopener noreferrer" th:text="${cadeau.nom()}">Cadeau</a>
                 <span class="cadeau-nom" th:unless="${cadeau.url()}" th:text="${cadeau.nom()}">Cadeau</span>
                 <small th:if="${cadeau.masque()}" class="cache">masqué</small>
-                <small th:if="${cadeau.pourTiers()}" class="tiers">pour un tiers</small>
+                  <small th:if="${cadeau.pourTiers()}" class="tiers"
+                      th:text="${cadeau.tiers() == null ? 'pour un tiers' : 'pour le compte de ' + cadeau.tiers()}">pour un tiers</small>
             </td>
             <td class="cadeau-prix" data-label="Prix"><span th:replace="~{fragments :: montant(${cadeau.prix()})}"></span></td>
             <td class="cadeau-tags" th:classappend="${#lists.isEmpty(cadeau.tags())} ? ' sans-tags'" data-label="Tags"><span class="tag" th:each="t : ${cadeau.tags()}" th:text="${t}">tag</span></td>

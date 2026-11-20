@@ -12,6 +12,8 @@
         <h1>Remboursement</h1>
     </div>
 
+    <nav th:replace="~{remboursement-fragments :: sousOnglets(${vue.id()}, false)}"></nav>
+
     <section th:replace="~{remboursement-fragments :: alertesRemboursement(${vue}, false)}"></section>
     <section th:replace="~{remboursement-fragments :: carteRemboursement(${vue}, false)}"></section>
 

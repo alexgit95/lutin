@@ -226,6 +226,11 @@ tr.masque td { color: #777; }
 button.pastille-remb { border-radius: 999px; padding: .2rem .65rem; font-size: .75rem; background: #fff0d9; color: #8a5a00; border: 1px dashed #d9a441; }
 button.pastille-remb.ok { background: #dcf7e6; color: #1d6b3c; border: 1px solid #7cc79a; }
 .carte-remboursement .remb-montants { margin: 0 0 .75rem; }
+.avances-tiers { list-style: none; padding: 0; margin: 0; }
+.avances-tiers li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .6rem 0; }
+.avances-tiers li + li { border-top: 1px solid var(--bord); }
+.avance-tiers-nom { flex: 1 1 15rem; min-width: 0; overflow-wrap: anywhere; }
+.avance-tiers-nom small { display: block; }
 .carte-remboursement form.ligne { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
 .carte-remboursement input[type=date] { width: auto; margin: 0; }
 .alerte-remb { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; background: #fdecea; color: #8c2b21; border-left: 4px solid #c0392b; border-radius: 10px; padding: .75rem 1rem; margin-bottom: .75rem; }

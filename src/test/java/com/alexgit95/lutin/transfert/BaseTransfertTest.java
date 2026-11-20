@@ -86,7 +86,8 @@ abstract class BaseTransfertTest {
                 new BigDecimal("80.50"), mamanId, false, false, Set.of(tagId))).getId();
         cadeauxService.changerStatut(listeId, montre, "alice", Statut.COMMANDE);
         cadeauxService.basculerRemboursement(listeId, montre, "alice");
-        cadeauxService.creer(listeId, "alice", new CadeauCommande("Idee secrete", null, null, mamanId, true, true, Set.of()));
+        cadeauxService.creer(listeId, "alice", new CadeauCommande("Idee secrete", null, null,
+            mamanId, true, true, Set.of(), mamanId));
         Long vendu = cadeauxService.creer(listeId, "alice", new CadeauCommande("Livre", null, new BigDecimal("12"),
                 mamanId, false, false, Set.of())).getId();
         cadeauxService.changerStatut(listeId, vendu, "alice", Statut.COMMANDE);

@@ -89,6 +89,12 @@ public class PersonneService {
     public void supprimer(Long listeId, Long personneId, String login) {
         acces.proprietaire(listeId, login);
         Personne personne = dansLaListe(listeId, personneId);
+        if (cadeaux.existsByTiersId(personneId)) {
+            throw new RequeteInvalideException("Retirez ou réattribuez d'abord les achats de ce tiers");
+        }
+        if (cadeaux.existsByPersonneIdAndTiersRembourseLeIsNotNull(personneId)) {
+            throw new RequeteInvalideException("Annulez d'abord les remboursements reçus des tiers pour ces cadeaux");
+        }
         // Les cadeaux remboursés disparaissent avec la personne : chaque virement devient inutile.
         cadeaux.findByPersonneIdAndRembourseLeIsNotNull(personneId)
                 .forEach(c -> alertes.signaler(c.getListe(), c.getNom(), c.getPrix()));

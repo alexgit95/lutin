@@ -59,7 +59,7 @@ public class CadeauService {
         }
         return titres.titre(url)
                 .map(titre -> new CadeauCommande(titre, commande.url(), commande.prix(), commande.personneId(),
-                        commande.masque(), commande.pourTiers(), commande.tagIds()))
+                        commande.masque(), commande.pourTiers(), commande.tagIds(), commande.tiersId()))
                 .orElse(commande);
     }
 
@@ -77,13 +77,18 @@ public class CadeauService {
         Cadeau c = dansLaListe(listeId, cadeauId);
         Set<Long> tagIds = c.getTags().stream().map(Tag::getId).collect(Collectors.toSet());
         return new CadeauCommande(c.getNom(), c.getUrl(), c.getPrix(), c.getPersonne().getId(),
-                c.isMasque(), c.isPourTiers(), tagIds);
+                c.isMasque(), c.isPourTiers(), tagIds, c.getTiers() == null ? null : c.getTiers().getId());
     }
 
     public void modifier(Long listeId, Long cadeauId, String login, CadeauCommande commande) {
         acces.proprietaire(listeId, login);
         Cadeau cadeau = dansLaListe(listeId, cadeauId);
-        if (cadeau.getRembourseLe() != null) {
+        if (cadeau.getTiersRembourseLe() != null) {
+            if (!commande.pourTiers() || !cadeau.getTiers().getId().equals(commande.tiersId())) {
+                refuserModificationTiersRegle();
+            }
+        }
+        if (cadeau.getRembourseLe() != null || cadeau.getTiersRembourseLe() != null) {
             verrouillerPrix(cadeau, commande);
         }
         appliquer(cadeau, listeId, commande);
@@ -96,7 +101,8 @@ public class CadeauService {
     @Transactional(readOnly = true)
     public boolean estRembourse(Long listeId, Long cadeauId, String login) {
         acces.proprietaire(listeId, login);
-        return dansLaListe(listeId, cadeauId).getRembourseLe() != null;
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        return cadeau.getRembourseLe() != null || cadeau.getTiersRembourseLe() != null;
     }
 
     /** Coche ou décoche le remboursement ; la date est celle du jour. */
@@ -112,6 +118,17 @@ public class CadeauService {
                     "Ce cadeau n'a pas encore quitté votre compte courant : il ne peut pas être remboursé");
         }
         cadeau.setRembourseLe(dateDuJour.aujourdhui());
+    }
+
+    public void noterRemboursementTiers(Long listeId, Long cadeauId, String login, boolean recu) {
+        acces.proprietaire(listeId, login);
+        Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (!cadeau.estRemboursableParTiers()) {
+            throw new RequeteInvalideException("Ce cadeau n'est pas remboursable par un tiers");
+        }
+        if (!recu || cadeau.getTiersRembourseLe() == null) {
+            cadeau.setTiersRembourseLe(recu ? dateDuJour.aujourdhui() : null);
+        }
     }
 
     /** Marque d'un coup tous les cadeaux remboursables non remboursés ; une date nulle vaut aujourd'hui. */
@@ -132,6 +149,9 @@ public class CadeauService {
             throw new RequeteInvalideException("Statut invalide");
         }
         Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (statut == Statut.A_ACHETER && cadeau.getTiersRembourseLe() != null) {
+            refuserModificationTiersRegle();
+        }
         cadeau.setStatut(statut);
         if (statut == Statut.A_ACHETER && cadeau.getRembourseLe() != null) {
             signalerVirementEnTrop(cadeau);
@@ -141,6 +161,9 @@ public class CadeauService {
     public void supprimer(Long listeId, Long cadeauId, String login) {
         acces.proprietaire(listeId, login);
         Cadeau cadeau = dansLaListe(listeId, cadeauId);
+        if (cadeau.getTiersRembourseLe() != null) {
+            refuserModificationTiersRegle();
+        }
         if (cadeau.getRembourseLe() != null) {
             signalerVirementEnTrop(cadeau);
         }
@@ -159,9 +182,16 @@ public class CadeauService {
         boolean identique = ancien == null ? nouveau == null
                 : nouveau != null && ancien.compareTo(nouveau) == 0;
         if (!identique) {
+            if (cadeau.getTiersRembourseLe() != null) {
+                refuserModificationTiersRegle();
+            }
             throw new RequeteInvalideException(
                     "Le prix d'un cadeau remboursé ne peut pas être modifié : décochez d'abord le remboursement");
         }
+    }
+
+    private void refuserModificationTiersRegle() {
+        throw new RequeteInvalideException("Annulez d'abord le remboursement reçu du tiers");
     }
 
     private void appliquer(Cadeau cadeau, Long listeId, CadeauCommande commande) {
@@ -173,9 +203,26 @@ public class CadeauService {
         cadeau.setUrl(url.isEmpty() ? null : url);
         cadeau.setPrix(prixValide(commande.prix()));
         cadeau.setMasque(commande.masque());
+        cadeau.setTiers(resoudreTiers(cadeau, listeId, commande));
         cadeau.setPourTiers(commande.pourTiers());
         cadeau.setPersonne(personneDeLaListe(listeId, commande.personneId()));
         cadeau.setTags(tagsDeLaListe(listeId, commande.tagIds()));
+    }
+
+    private Personne resoudreTiers(Cadeau cadeau, Long listeId, CadeauCommande commande) {
+        if (!commande.pourTiers()) {
+            return null;
+        }
+        if (commande.tiersId() == null && cadeau.isPourTiers() && cadeau.getTiers() == null) {
+            return null;
+        }
+        return commande.tiersId() == null ? tiersInvalide() : personnes.findById(commande.tiersId())
+                .filter(personne -> personne.getListe().getId().equals(listeId))
+                .orElseGet(this::tiersInvalide);
+    }
+
+    private Personne tiersInvalide() {
+        throw new RequeteInvalideException("Choisissez un tiers de cette liste");
     }
 
     private String resoudreNom(String nom, String url) {

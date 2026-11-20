@@ -18,6 +18,7 @@ public class CadeauForm {
     private Long personneId;
     private boolean masque;
     private boolean pourTiers;
+    private Long tiersId;
     private Set<Long> tagIds = new HashSet<>();
 
     public static CadeauForm depuis(CadeauCommande c) {
@@ -28,12 +29,13 @@ public class CadeauForm {
         form.personneId = c.personneId();
         form.masque = c.masque();
         form.pourTiers = c.pourTiers();
+        form.tiersId = c.tiersId();
         form.tagIds = new HashSet<>(c.tagIds());
         return form;
     }
 
     public CadeauCommande versCommande() {
         return new CadeauCommande(nom, url, prix, personneId, masque, pourTiers,
-                tagIds == null ? Set.of() : tagIds);
+                tagIds == null ? Set.of() : tagIds, tiersId);
     }
 }

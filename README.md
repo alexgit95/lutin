@@ -20,7 +20,7 @@ Un utilisateur crée plusieurs listes (ex. « Noël 2026 »). Chaque liste s'ouv
 |---|---|
 | **Dashboard** | Budget global, déboursé, reste à payer, cadeaux regroupés par personne (filtre par tag, changement de statut direct) et barre de workflow persistante |
 | **Personnes** | Création, modification (nom, budget) et suppression des destinataires, via un sous-menu `⋯` par personne (+ cadeau, modifier, supprimer). Chaque personne affiche une barre de budget : dépensé, reste à payer et budget. Import des personnes d'une autre de vos listes (voir ci-dessous) |
-| **Remboursement** | Alertes « virement en trop », carte « À virer » avec « Tout marquer remboursé », liste des cadeaux remboursables avec leur pastille (voir ci-dessous) |
+| **Remboursement** | Sous-vue « Épargne » pour les virements et alertes ; sous-vue « Tiers » pour les avances à récupérer par personne |
 | **Partage** | Partage de la liste en lecture seule avec un autre utilisateur choisi dans une liste déroulante |
 | **Réglages** | Renommer ou supprimer la liste |
 
@@ -63,12 +63,16 @@ Les cadeaux masqués restent comptés dans les totaux. Pour un lecteur, la répa
 - Le filtre par tag s'applique à la liste, pas aux compteurs.
 
 ### Remboursement des cadeaux (propriétaire seulement)
+
+**Épargne** est la sous-vue ouverte par défaut.
 Les achats passent par le compte courant, puis un virement de remboursement part du compte d'épargne. L'application suit ce virement sans toucher au Déboursé ni au Reste à payer.
 
 - **Onglet « Remboursement »** (entre Personnes et Partage, propriétaire seulement) : tout le suivi s'y fait ; le dashboard ne montre ni carte, ni alerte, ni pastille, ni filtre de remboursement. Un badge rouge sur l'onglet indique le nombre d'alertes en attente, y compris juste après un changement de statut sur le dashboard.
 - **Cadeaux remboursables** : statut Commandé ou plus, prix renseigné, pas « pour un tiers ». L'onglet les liste, les non remboursés d'abord (puis par personne et par nom), par pages de 50. Chacun porte une pastille « € à rembourser » ; un clic la passe à « remboursé le jj/MM » (date du jour), un second clic annule.
 - **Carte « À rembourser »** (en haut de l'onglet) : montant restant à virer, montant déjà remboursé, et le bouton « Tout marquer remboursé » avec la date du virement préremplie (aujourd'hui, jamais dans le futur). Le bouton est inactif s'il n'y a rien à virer, et le compte rendu indique le nombre de cadeaux et la somme.
 - **Prix verrouillé** : le prix d'un cadeau remboursé n'est plus modifiable (champ en lecture seule) ; décochez d'abord le remboursement.
+
+**Tiers** : dans le formulaire d'un cadeau, cochez « Acheté pour le compte d'un tiers » et sélectionnez une personne de la liste, indépendamment du destinataire. Une fois le cadeau « Commandé » ou plus et son prix renseigné, il figure dans **Remboursement → Tiers**, avec le reste à recevoir de cette personne. « Marquer reçu » enregistre le remboursement intégral du prix et sa date ; cliquez sur « Reçu le… » pour annuler. Il n'y a pas de remboursement partiel. Les cadeaux historiques sans personne attribuée figurent dans « Tiers à préciser ». Le suivi reste privé et ne modifie ni les budgets ni les virements d'épargne.
 - **Alertes « virement en trop »** : si un cadeau remboursé retourne à « À acheter », est supprimé, passe « pour un tiers » ou voit sa personne supprimée, la date est effacée et une alerte garde le montant déjà viré. Elle reste affichée dans l'onglet jusqu'à sa fermeture par le propriétaire (les 20 plus récentes, avec le total).
 - Un lecteur ne reçoit aucune de ces informations ; les actions sont refusées (403) à tout autre que le propriétaire.
 - **Fuseau horaire** : la « date du jour » suit `lutin.fuseau-horaire` (défaut `Europe/Paris`).

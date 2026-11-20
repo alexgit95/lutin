@@ -37,6 +37,8 @@ entity "cadeau" as cadeau {
   * masque : boolean
   * pour_tiers : boolean
   rembourse_le : date <<nul = non remboursé ; propriétaire seulement>>
+  tiers_id : bigint <<FK facultative>>
+  tiers_rembourse_le : date <<facultative>>
   * personne_id : bigint <<FK>>
   * liste_id : bigint <<FK>>
 }
@@ -134,6 +136,7 @@ liste_achat ||--o{ tag
 liste_achat ||--o{ partage
 utilisateur ||--o{ partage : lecteur
 personne ||--o{ cadeau : destinataire
+personne |o--o{ cadeau : tiers
 cadeau ||--o{ cadeau_tag
 tag ||--o{ cadeau_tag
 utilisateur ||--o{ wishlist : possède

@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -41,6 +42,28 @@ public class RemboursementController {
                          Principal principal, Model model) {
         model.addAttribute("vue", remboursements.afficher(listeId, principal.getName(), page));
         return "remboursement";
+    }
+
+    @GetMapping("/remboursements/tiers")
+    public String tiers(@PathVariable Long listeId, @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "0") int pageSansTiers, Principal principal, Model model) {
+        model.addAttribute("vue", remboursements.afficherTiers(listeId, principal.getName(), page, pageSansTiers));
+        return "remboursement-tiers";
+    }
+
+    @PostMapping("/remboursements/tiers/{cadeauId}")
+    public String noterTiers(@PathVariable Long listeId, @PathVariable Long cadeauId, @RequestParam boolean recu,
+                             @RequestParam(defaultValue = "0") int page,
+                             @RequestParam(defaultValue = "0") int pageSansTiers,
+                             @RequestHeader(value = "HX-Request", required = false) String htmx,
+                             Principal principal, Model model) {
+        cadeaux.noterRemboursementTiers(listeId, cadeauId, principal.getName(), recu);
+        if (htmx == null) {
+            return "redirect:/listes/" + listeId + "/remboursements/tiers?page=" + Math.max(0, page)
+                    + "&pageSansTiers=" + Math.max(0, pageSansTiers);
+        }
+        model.addAttribute("vue", remboursements.afficherTiers(listeId, principal.getName(), page, pageSansTiers));
+        return "remboursement-tiers :: suivi";
     }
 
     @PostMapping("/remboursements")

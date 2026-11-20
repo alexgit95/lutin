@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <body>
+<nav class="onglets" aria-label="Types de remboursement" th:fragment="sousOnglets(listeId, tiers)">
+     <a th:href="@{/listes/{id}/remboursements(id=${listeId})}" th:classappend="${!tiers} ? 'actif'"
+         th:attr="aria-current=${!tiers ? 'page' : null}">Épargne</a>
+     <a th:href="@{/listes/{id}/remboursements/tiers(id=${listeId})}" th:classappend="${tiers} ? 'actif'"
+         th:attr="aria-current=${tiers ? 'page' : null}">Tiers</a>
+</nav>
 <tr th:fragment="ligneRemboursement(ligne, listeId, page)" th:id="'remb-' + ${ligne.id()}">
     <td th:text="${ligne.nom()}">Cadeau</td>
     <td th:text="${ligne.personne()}">Maman</td>

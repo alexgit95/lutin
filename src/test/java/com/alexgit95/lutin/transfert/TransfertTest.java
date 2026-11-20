@@ -1,5 +1,7 @@
 package com.alexgit95.lutin.transfert;
 
+import com.alexgit95.lutin.domain.Cadeau;
+import com.alexgit95.lutin.domain.Statut;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +49,29 @@ class TransfertTest extends BaseTransfertTest {
         assertThatThrownBy(() -> importer(fichier)).isInstanceOf(ImportException.class)
                 .hasMessageContaining(messageAttendu);
         assertThat(avant()).isEqualTo(etatInitial);
+    }
+
+    @Test
+    void restaureLeTiersEtSaDateEtAccepteUnAncienExport() {
+        Cadeau avance = cadeaux.findAll().stream().filter(Cadeau::isPourTiers).findFirst().orElseThrow();
+        avance.setStatut(Statut.COMMANDE);
+        avance.setPrix(BigDecimal.TEN);
+        LocalDate date = LocalDate.of(2026, 11, 20);
+        avance.setTiersRembourseLe(date);
+        cadeaux.saveAndFlush(avance);
+        String sauvegarde = stable(exporter());
+
+        importer(sauvegarde);
+        Cadeau restaure = cadeaux.findById(avance.getId()).orElseThrow();
+        assertThat(restaure.getTiers().getId()).isEqualTo(mamanId);
+        assertThat(restaure.getTiersRembourseLe()).isEqualTo(date);
+
+        importer(sauvegarde.replaceAll("\"tiers_id\":(null|\\d+),", "")
+                .replaceAll("\"tiers_rembourse_le\":(null|\"[^\"]*\"),", ""));
+        Cadeau historique = cadeaux.findById(avance.getId()).orElseThrow();
+        assertThat(historique.isPourTiers()).isTrue();
+        assertThat(historique.getTiers()).isNull();
+        assertThat(historique.getTiersRembourseLe()).isNull();
     }
 
     @Test

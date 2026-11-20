@@ -48,7 +48,7 @@ public final class Tables {
                     id(),
                     texte("nom", "e.nom", true, 50),
                     ref("liste_id", "e.liste.id", "liste_achat")),
-            table("cadeau", "Cadeau e", true,
+            table("cadeau", "Cadeau e left join e.tiers tiers", true,
                     id(),
                     texte("nom", "e.nom", true, 255),
                     texte("url", "e.url", false, 2048),
@@ -57,6 +57,8 @@ public final class Tables {
                     col("masque", "e.masque", BOOLEEN, true),
                     col("pour_tiers", "e.pourTiers", BOOLEEN, true),
                     col("rembourse_le", "e.rembourseLe", DATE, false),
+                    new Colonne("tiers_id", "tiers.id", LONG, false, 0, "personne", null),
+                    col("tiers_rembourse_le", "e.tiersRembourseLe", DATE, false),
                     ref("personne_id", "e.personne.id", "personne"),
                     ref("liste_id", "e.liste.id", "liste_achat")),
             new TableTransfert("cadeau_tag", "Cadeau e join e.tags t", "e.id, t.id", false, List.of(

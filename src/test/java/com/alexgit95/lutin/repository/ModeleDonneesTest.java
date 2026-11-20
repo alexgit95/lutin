@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +79,27 @@ class ModeleDonneesTest {
                 .isEqualByComparingTo("100.50");
         assertThat(cadeaux.countByPersonneId(maman.getId())).isEqualTo(1);
         assertThat(cadeaux.findByListeId(liste.getId(), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void persisteUnRemboursementTiersDistinct() {
+        ListeAchat liste = listes.saveAndFlush(new ListeAchat("Noel", utilisateur("alice")));
+        Personne destinataire = personnes.saveAndFlush(new Personne("Lea", BigDecimal.ZERO, liste));
+        Personne tiers = personnes.saveAndFlush(new Personne("Marc", BigDecimal.ZERO, liste));
+        Cadeau cadeau = new Cadeau();
+        cadeau.setNom("Livre");
+        cadeau.setListe(liste);
+        cadeau.setPersonne(destinataire);
+        cadeau.setPourTiers(true);
+        cadeau.setTiers(tiers);
+        cadeau.setTiersRembourseLe(LocalDate.of(2026, 11, 20));
+        cadeaux.saveAndFlush(cadeau);
+
+        Cadeau relu = cadeaux.findById(cadeau.getId()).orElseThrow();
+        assertThat(relu.getTiers().getId()).isEqualTo(tiers.getId());
+        assertThat(relu.getPersonne().getId()).isEqualTo(destinataire.getId());
+        assertThat(relu.getTiersRembourseLe()).isEqualTo(cadeau.getTiersRembourseLe());
+        assertThat(relu.getRembourseLe()).isNull();
     }
 
     @Test

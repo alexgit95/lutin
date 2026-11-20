@@ -83,7 +83,7 @@ class RemboursementWebTest {
 
     private Long cadeau(String nom, String prix, Statut statut, boolean tiers) {
         Long id = cadeauxService.creer(listeId, "alice", new CadeauCommande(nom, null, new BigDecimal(prix),
-                mamanId, false, tiers, Set.of())).getId();
+                mamanId, false, tiers, Set.of(), tiers ? mamanId : null)).getId();
         cadeauxService.changerStatut(listeId, id, "alice", statut);
         return id;
     }
@@ -109,6 +109,42 @@ class RemboursementWebTest {
     }
 
     @Test
+        void choisitUnTiersEtMarqueSonRemboursementSansRecharger() throws Exception {
+        Long marc = personnesService.creer(listeId, "alice", "MarcTiers", BigDecimal.ZERO).getId();
+        String formulaire = page("alice", "/cadeaux/nouveau");
+        assertThat(formulaire).contains("name=\"tiersId\"", "MarcTiers");
+
+        mvc.perform(post("/listes/" + listeId + "/cadeaux").with(user("alice")).with(csrf())
+                .param("nom", "Livre pour maman").param("prix", "35").param("personneId", mamanId.toString())
+                .param("pourTiers", "true").param("tiersId", marc.toString()))
+            .andExpect(status().is3xxRedirection());
+        Long id = cadeaux.findAll().getFirst().getId();
+        cadeauxService.changerStatut(listeId, id, "alice", Statut.COMMANDE);
+        assertThat(page("alice", "")).contains("pour le compte de MarcTiers");
+        assertThat(page("bob", "")).doesNotContain("pour le compte de MarcTiers", "/remboursements/tiers");
+        assertThat(page("bob", "/cadeaux")).contains("Livre pour maman")
+            .doesNotContain("MarcTiers", "/remboursements/tiers", "Marquer reçu");
+
+        String chemin = "/listes/" + listeId + "/remboursements/tiers";
+        assertThat(page("alice", "/remboursements/tiers")).contains("MarcTiers", "35,00", "Marquer reçu");
+        mvc.perform(get(chemin).with(user("bob"))).andExpect(status().isForbidden());
+        mvc.perform(post(chemin + "/" + id).with(user("bob")).with(csrf()).param("recu", "true"))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(chemin + "/" + id).with(user("alice")).param("recu", "true"))
+            .andExpect(status().isForbidden());
+
+        String fragment = mvc.perform(post(chemin + "/" + id).with(user("alice")).with(csrf())
+                .header("HX-Request", "true").param("recu", "true"))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(fragment).contains("id=\"suivi-tiers\"", "0,00", "Reçu le").doesNotContain("<html");
+        assertThat(cadeaux.findById(id).orElseThrow().getTiersRembourseLe()).isEqualTo(dateDuJour.aujourdhui());
+
+        mvc.perform(post(chemin + "/" + id).with(user("alice")).with(csrf()).param("recu", "false"))
+            .andExpect(redirectedUrl(chemin + "?page=0&pageSansTiers=0"));
+        assertThat(cadeaux.findById(id).orElseThrow().getTiersRembourseLe()).isNull();
+        }
+
+        @Test
     void lOngletMontreLaCarteLesPastillesEtSeulementLesCadeauxRemboursables() throws Exception {
         cadeau("Montre", "80", Statut.COMMANDE, false);
         cadeau("Livre", "20", Statut.LIVRE, false);

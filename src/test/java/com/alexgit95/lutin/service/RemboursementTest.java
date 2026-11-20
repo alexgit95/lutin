@@ -75,7 +75,8 @@ class RemboursementTest {
 
     private Long cadeau(String nom, String prix, Statut statut, boolean tiers) {
         Long id = cadeauxService.creer(listeId, "alice", new CadeauCommande(nom, null,
-                prix == null ? null : new BigDecimal(prix), mamanId, false, tiers, Set.of())).getId();
+                prix == null ? null : new BigDecimal(prix), mamanId, false, tiers, Set.of(),
+                tiers ? mamanId : null)).getId();
         cadeauxService.changerStatut(listeId, id, "alice", statut);
         return id;
     }
@@ -83,6 +84,79 @@ class RemboursementTest {
     private LocalDate rembourseLe(Long id) {
         return cadeaux.findById(id).orElseThrow().getRembourseLe();
     }
+
+        @Test
+            void leReglementTiersMetAJourLeTotalSansToucherALEpargne() {
+            Long livre = cadeau("Livre", "35", Statut.COMMANDE, true);
+            Long jeu = cadeau("Jeu", "20", Statut.LIVRE, true);
+            Long futur = cadeau("Futur", "99", Statut.A_ACHETER, true);
+            assertThatThrownBy(() -> cadeauxService.noterRemboursementTiers(listeId, futur, "alice", true))
+                .isInstanceOf(RequeteInvalideException.class);
+
+            cadeauxService.noterRemboursementTiers(listeId, livre, "alice", true);
+            var vue = remboursements.afficherTiers(listeId, "alice", 0, 0);
+            assertThat(vue.totaux()).singleElement().satisfies(total -> assertThat(total.reste()).isEqualByComparingTo("20"));
+            assertThat(vue.lignes().getContent()).extracting(RemboursementService.LigneTiers::id)
+                .containsExactly(jeu, livre);
+            assertThat(cadeaux.findById(livre).orElseThrow().getTiersRembourseLe()).isNotNull();
+            assertThat(rembourseLe(livre)).isNull();
+
+            cadeauxService.noterRemboursementTiers(listeId, livre, "alice", false);
+            assertThat(remboursements.afficherTiers(listeId, "alice", 0, 0).totaux()).singleElement()
+                .satisfies(total -> assertThat(total.reste()).isEqualByComparingTo("55"));
+            }
+
+            @Test
+        void exigeUnTiersValideSaufPourUnCadeauHistorique() {
+        CadeauCommande sansTiers = new CadeauCommande("Livre", null, BigDecimal.TEN,
+            mamanId, false, true, Set.of());
+        assertThatThrownBy(() -> cadeauxService.creer(listeId, "alice", sansTiers))
+            .isInstanceOf(RequeteInvalideException.class);
+        Long autreListe = listesService.creer("alice", "Autre liste").getId();
+        Long autreTiers = personnesService.creer(autreListe, "alice", "Autre tiers", BigDecimal.ZERO).getId();
+        assertThatThrownBy(() -> cadeauxService.creer(listeId, "alice", new CadeauCommande("Livre", null,
+            BigDecimal.TEN, mamanId, false, true, Set.of(), autreTiers)))
+            .isInstanceOf(RequeteInvalideException.class);
+        Long id = cadeau("Livre", "10", Statut.COMMANDE, true);
+        var historique = cadeaux.findById(id).orElseThrow();
+        historique.setTiers(null);
+        cadeaux.saveAndFlush(historique);
+        cadeauxService.modifier(listeId, id, "alice", sansTiers);
+        assertThat(cadeauxService.obtenir(listeId, id, "alice").tiersId()).isNull();
+        var vue = remboursements.afficherTiers(listeId, "alice", 0, 0);
+        assertThat(vue.totaux()).isEmpty();
+        assertThat(vue.sansTiers().getContent()).extracting(RemboursementService.AchatSansTiers::id)
+                .containsExactly(id);
+        }
+
+    @Test
+    void leTotalTiersCouvreToutesLesPages() {
+        for (int numero = 0; numero <= RemboursementService.TAILLE_PAGE; numero++) {
+            cadeau("Livre " + numero, "1", Statut.COMMANDE, true);
+        }
+        var vue = remboursements.afficherTiers(listeId, "alice", 1, 0);
+        assertThat(vue.lignes().getContent()).hasSize(1);
+        assertThat(vue.lignes().getTotalPages()).isEqualTo(2);
+        assertThat(vue.totaux()).singleElement().satisfies(total -> assertThat(total.reste()).isEqualByComparingTo("51"));
+    }
+
+        @Test
+        void protegeLeCadeauEtLaPersonneApresReglementTiers() {
+        Long id = cadeau("Livre", "10", Statut.COMMANDE, true);
+        var regle = cadeaux.findById(id).orElseThrow();
+        regle.setTiersRembourseLe(LocalDate.of(2026, 11, 20));
+        cadeaux.saveAndFlush(regle);
+        assertThatThrownBy(() -> cadeauxService.changerStatut(listeId, id, "alice", Statut.A_ACHETER))
+            .isInstanceOf(RequeteInvalideException.class);
+        assertThatThrownBy(() -> cadeauxService.modifier(listeId, id, "alice",
+            new CadeauCommande("Livre", null, BigDecimal.ONE, mamanId, false, true, Set.of(), mamanId)))
+            .isInstanceOf(RequeteInvalideException.class);
+        assertThatThrownBy(() -> cadeauxService.supprimer(listeId, id, "alice"))
+            .isInstanceOf(RequeteInvalideException.class);
+        assertThatThrownBy(() -> personnesService.supprimer(listeId, mamanId, "alice"))
+            .isInstanceOf(RequeteInvalideException.class);
+        assertThat(cadeaux.findById(id).orElseThrow().getTiersRembourseLe()).isNotNull();
+        }
 
     private VueRemboursement vue(String login) {
         return remboursements.afficher(listeId, login, 0);
@@ -237,7 +311,7 @@ class RemboursementTest {
         cadeauxService.basculerRemboursement(listeId, id, "alice");
 
         cadeauxService.modifier(listeId, id, "alice", new CadeauCommande("Jeu", null, new BigDecimal("40"),
-                mamanId, false, true, Set.of()));
+                mamanId, false, true, Set.of(), mamanId));
 
         assertThat(rembourseLe(id)).isNull();
         assertThat(alertesService.lister(listeId, "alice").total()).isEqualTo(1);

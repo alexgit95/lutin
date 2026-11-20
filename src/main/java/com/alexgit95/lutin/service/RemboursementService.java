@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -41,6 +42,34 @@ public class RemboursementService {
         List<VueRemboursement.Ligne> lignes = resultat.getContent().stream().map(RemboursementService::ligne).toList();
         return construire(liste, login, lignes, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1));
     }
+
+        public VueTiers afficherTiers(Long listeId, String login, int page, int pageSansTiers) {
+        acces.proprietaire(listeId, login);
+        List<TotalTiers> totaux = cadeaux.sommesParTiers(listeId).stream()
+            .map(total -> new TotalTiers((String) total[0], (BigDecimal) total[1])).toList();
+        Page<LigneTiers> lignes = cadeaux.findRemboursablesParTiers(listeId, page(page))
+            .map(cadeau -> new LigneTiers(cadeau.getId(), cadeau.getNom(), cadeau.getPersonne().getNom(),
+                cadeau.getTiers().getNom(), cadeau.getPrix(), cadeau.getTiersRembourseLe() == null
+                    ? null : cadeau.getTiersRembourseLe().format(JOUR_MOIS)));
+        Page<AchatSansTiers> sansTiers = cadeaux.findByListeIdAndPourTiersTrueAndTiersIsNullOrderByNomAscIdAsc(
+                listeId, page(pageSansTiers))
+            .map(cadeau -> new AchatSansTiers(cadeau.getId(), cadeau.getNom()));
+        return new VueTiers(listeId, totaux, lignes, sansTiers);
+        }
+
+        private static PageRequest page(int numero) {
+        return PageRequest.of(Math.max(numero, 0), TAILLE_PAGE);
+        }
+
+        public record VueTiers(Long id, List<TotalTiers> totaux, Page<LigneTiers> lignes,
+                   Page<AchatSansTiers> sansTiers) { }
+
+        public record TotalTiers(String nom, BigDecimal reste) { }
+
+        public record LigneTiers(Long id, String nom, String destinataire, String tiers, BigDecimal prix,
+                     String rembourseLe) { }
+
+        public record AchatSansTiers(Long id, String nom) { }
 
     /** Montants et alertes sans la liste de cadeaux, pour rafraîchir la carte après un cochage. */
     public VueRemboursement carte(Long listeId, String login) {

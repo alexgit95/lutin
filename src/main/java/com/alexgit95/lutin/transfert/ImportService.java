@@ -106,6 +106,7 @@ public class ImportService {
 
         private final IdentiteAdmin administrateur;
         private final Map<String, Set<Long>> identifiants = new HashMap<>();
+        private final Map<Long, Long> listesDesPersonnes = new HashMap<>();
         private boolean administrateurTrouve;
 
         Validation(IdentiteAdmin administrateur) {
@@ -140,6 +141,26 @@ public class ImportService {
             }
             if ("utilisateur".equals(table.nom())) {
                 controlerCompte(table, valeurs);
+            }
+            if ("personne".equals(table.nom())) {
+                listesDesPersonnes.put((Long) valeurs[0], (Long) valeurs[table.indexDe("liste_id")]);
+            }
+            if ("cadeau".equals(table.nom())) {
+                controlerTiers(table, numero, valeurs);
+            }
+        }
+
+        private void controlerTiers(TableTransfert table, long numero, Object[] valeurs) {
+            Long tiers = (Long) valeurs[table.indexDe("tiers_id")];
+            if (tiers != null && (!Boolean.TRUE.equals(valeurs[table.indexDe("pour_tiers")])
+                    || !valeurs[table.indexDe("liste_id")].equals(listesDesPersonnes.get(tiers)))) {
+                throw new ImportException("Table cadeau, ligne " + numero + " : tiers invalide pour cette liste");
+            }
+            if (valeurs[table.indexDe("tiers_rembourse_le")] != null && (tiers == null
+                    || valeurs[table.indexDe("prix")] == null
+                    || "A_ACHETER".equals(valeurs[table.indexDe("statut")])
+                    || valeurs[table.indexDe("rembourse_le")] != null)) {
+                throw new ImportException("Table cadeau, ligne " + numero + " : remboursement tiers invalide");
             }
         }
 

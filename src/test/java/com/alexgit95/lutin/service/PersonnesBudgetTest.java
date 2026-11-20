@@ -71,7 +71,8 @@ class PersonnesBudgetTest {
 
     private void cadeau(Long personneId, String prix, Statut statut, boolean masque, boolean tiers) {
         Long id = cadeauxService.creer(listeId, "alice", new CadeauCommande("Cadeau", null,
-                prix == null ? null : new BigDecimal(prix), personneId, masque, tiers, Set.of())).getId();
+                prix == null ? null : new BigDecimal(prix), personneId, masque, tiers, Set.of(),
+                tiers ? personneId : null)).getId();
         cadeauxService.changerStatut(listeId, id, "alice", statut);
     }
 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Remboursement des tiers')}"></head>
+<body>
+<header th:replace="~{fragments :: barre}"></header>
+<main class="page dashboard">
+    <nav th:replace="~{fragments :: onglets(${vue.id()}, 'remboursement', false)}"></nav>
+    <div th:replace="~{fragments :: messages}"></div>
+    <div class="entete"><h1>Remboursement</h1></div>
+    <nav th:replace="~{remboursement-fragments :: sousOnglets(${vue.id()}, true)}"></nav>
+    <div id="suivi-tiers" th:fragment="suivi">
+        <section class="panneau">
+            <h2>Reste à recevoir par tiers</h2>
+            <p class="vide" th:if="${vue.totaux().isEmpty()}">Aucune avance pour un tiers.</p>
+            <ul th:unless="${vue.totaux().isEmpty()}">
+                <li th:each="total : ${vue.totaux()}">
+                    <span th:text="${total.nom()}">Tiers</span> :
+                    <strong th:replace="~{fragments :: montant(${total.reste()})}"></strong>
+                </li>
+            </ul>
+        </section>
+        <section class="panneau" th:if="${vue.lignes().totalElements > 0}">
+            <h2>Achats pour les tiers</h2>
+            <ul class="avances-tiers">
+                <li th:each="ligne : ${vue.lignes().content}">
+                    <div class="avance-tiers-nom">
+                        <strong th:text="${ligne.nom()}">Cadeau</strong>
+                        <small th:text="|Pour ${ligne.destinataire()} · Compte de ${ligne.tiers()}|">Personnes</small>
+                    </div>
+                    <span th:replace="~{fragments :: montant(${ligne.prix()})}"></span>
+                    <form method="post" class="remb-form" hx-target="#suivi-tiers" hx-swap="outerHTML"
+                          th:action="@{/listes/{id}/remboursements/tiers/{cid}(id=${vue.id()},cid=${ligne.id()})}"
+                          th:hx-post="@{/listes/{id}/remboursements/tiers/{cid}(id=${vue.id()},cid=${ligne.id()})}">
+                        <input type="hidden" name="recu" th:value="${ligne.rembourseLe() == null}">
+                        <input type="hidden" name="page" th:value="${vue.lignes().number}">
+                        <input type="hidden" name="pageSansTiers" th:value="${vue.sansTiers().number}">
+                        <button type="submit" class="pastille-remb" th:classappend="${ligne.rembourseLe() != null} ? 'ok'"
+                                th:text="${ligne.rembourseLe() == null ? 'Marquer reçu' : 'Reçu le ' + ligne.rembourseLe()}"
+                                th:title="${ligne.rembourseLe() != null ? 'Annuler le remboursement reçu' : null}">Marquer reçu</button>
+                    </form>
+                </li>
+            </ul>
+            <div class="pagination" th:if="${vue.lignes().totalPages > 1}">
+                <a th:if="${vue.lignes().hasPrevious()}" th:href="@{/listes/{id}/remboursements/tiers(id=${vue.id()},page=${vue.lignes().number - 1},pageSansTiers=${vue.sansTiers().number})}">Précédent</a>
+                <span th:text="|${vue.lignes().number + 1} / ${vue.lignes().totalPages}|">1 / 2</span>
+                <a th:if="${vue.lignes().hasNext()}" th:href="@{/listes/{id}/remboursements/tiers(id=${vue.id()},page=${vue.lignes().number + 1},pageSansTiers=${vue.sansTiers().number})}">Suivant</a>
+            </div>
+        </section>
+        <section class="panneau" th:if="${vue.sansTiers().totalElements > 0}">
+            <h2>Tiers à préciser</h2>
+            <ul>
+                <li th:each="ligne : ${vue.sansTiers().content}">
+                    <a th:href="@{/listes/{id}/cadeaux/{cid}/modifier(id=${vue.id()},cid=${ligne.id()})}"
+                       th:text="${ligne.nom()}">Cadeau</a>
+                </li>
+            </ul>
+            <div class="pagination" th:if="${vue.sansTiers().totalPages > 1}">
+                <a th:if="${vue.sansTiers().hasPrevious()}" th:href="@{/listes/{id}/remboursements/tiers(id=${vue.id()},page=${vue.lignes().number},pageSansTiers=${vue.sansTiers().number - 1})}">Précédent</a>
+                <span th:text="|${vue.sansTiers().number + 1} / ${vue.sansTiers().totalPages}|">1 / 2</span>
+                <a th:if="${vue.sansTiers().hasNext()}" th:href="@{/listes/{id}/remboursements/tiers(id=${vue.id()},page=${vue.lignes().number},pageSansTiers=${vue.sansTiers().number + 1})}">Suivant</a>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>
