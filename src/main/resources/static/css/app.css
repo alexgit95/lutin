@@ -116,13 +116,18 @@ tr.masque td { color: #777; }
     .topbar nav { min-width: 0; overflow-wrap: anywhere; }
     .page.dashboard .onglets { flex-wrap: wrap; }
     .dashboard .panneau { padding: 1rem; }
-    th:nth-child(4), td:nth-child(4) { display: none; }
     .groupe-cadeaux table, .groupe-cadeaux tbody { display: block; }
     .groupe-cadeaux thead { display: none; }
-    .groupe-cadeaux tr.cadeau-ligne { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .75rem; padding: .6rem 0; border-bottom: 1px solid var(--bord); }
+    .groupe-cadeaux tr.cadeau-ligne { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr) auto; grid-template-areas: "nom nom nom" "prix statut actions"; gap: .25rem .6rem; padding: .6rem 0; border-bottom: 1px solid var(--bord); }
+    .groupe-cadeaux tr.cadeau-ligne:has(> td.cadeau-tags:not(.sans-tags)) { grid-template-areas: "nom nom nom" "tags tags tags" "prix statut actions"; }
     .groupe-cadeaux tr.cadeau-ligne td { display: block; min-width: 0; padding: 0; border: 0; }
-    .groupe-cadeaux tr.cadeau-ligne td:first-child { grid-column: 1 / -1; }
-    .groupe-cadeaux tr.cadeau-ligne td.mini { grid-column: 2; justify-self: end; }
+    .groupe-cadeaux td.cadeau-nom-cell { grid-area: nom; }
+    .groupe-cadeaux td.cadeau-tags { grid-area: tags; }
+    .groupe-cadeaux td.cadeau-prix { grid-area: prix; }
+    .groupe-cadeaux td.cadeau-statut { grid-area: statut; }
+    .groupe-cadeaux td.cadeau-tags.sans-tags { display: none; }
+    .groupe-cadeaux td.cadeau-nom-cell[colspan] { grid-column: 1 / -1; }
+    .groupe-cadeaux tr.cadeau-ligne td.mini { grid-area: actions; justify-self: end; }
     .groupe-cadeaux td[data-label]::before { content: attr(data-label); display: block; font-size: .75rem; font-weight: 600; }
     .groupe-cadeaux td.mini { margin-top: .25rem; }
     .page.dashboard { padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)); }

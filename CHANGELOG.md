@@ -2,6 +2,12 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.16.3] - 2026-11-16
+
+### Changed
+- Sur téléphone, les tags apparaissent sous le nom du cadeau ; le prix, le statut et les actions sont réorganisés sur une ligne qui réserve davantage d'espace au statut. La disposition desktop reste inchangée.
+- Version du `pom.xml` portée à 0.16.3. Aucun changement de schéma ni de pipeline.
+
 ## [0.16.2] - 2026-11-16
 
 ### Changed

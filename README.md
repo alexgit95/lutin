@@ -57,7 +57,7 @@ Les cadeaux masqués restent comptés dans les totaux. Pour un lecteur, la répa
 
 ### Liste des cadeaux du dashboard
 - Les cadeaux sont regroupés par personne destinataire, indiquée dans l'en-tête du groupe sans colonne supplémentaire. Deux personnes portant le même nom restent dans des groupes distincts. Pour un lecteur, tous les cadeaux masqués forment un seul groupe « Cadeaux masqués » placé après les autres, dans l'ordre de création : leur place ne révèle ni leur nom ni leur destinataire.
-- Les colonnes sont alignées entre groupes et les noms longs passent sur plusieurs lignes. Sur téléphone, les informations et actions restent accessibles sans défilement horizontal.
+- Les colonnes sont alignées entre groupes et les noms longs passent sur plusieurs lignes. Sur téléphone, les tags s'affichent sous le nom du cadeau ; le prix, le statut et les actions suivent sur une rangée donnant plus de place au statut. Les informations restent accessibles sans défilement horizontal.
 - Pour le propriétaire, le bouton `⋯` de chaque cadeau regroupe les actions « Modifier » et « Supprimer » ; la suppression demande une confirmation. Le menu se ferme au clic ailleurs ou avec Échap et n'est pas proposé au lecteur.
 - Pas de pagination visible : les cadeaux se chargent par lots de 50 au fil du défilement. Un groupe qui s'étend sur deux lots continue sans répéter son en-tête. Si un chargement échoue, un bouton « Réessayer » apparaît et les cadeaux déjà affichés sont conservés.
 - Le filtre par tag s'applique à la liste, pas aux compteurs.

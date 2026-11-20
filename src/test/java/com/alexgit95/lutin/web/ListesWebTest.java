@@ -125,6 +125,10 @@ class ListesWebTest {
                 .andExpect(content().string(containsString("data-statut=\"A_ACHETER\"")))
                 .andExpect(content().string(containsString("Cadeau secret")))
                 .andExpect(content().string(containsString("<h3>Maman</h3>")))
+                .andExpect(content().string(containsString("class=\"cadeau-nom-cell\"")))
+                .andExpect(content().string(containsString("class=\"cadeau-prix\" data-label=\"Prix\"")))
+                .andExpect(content().string(containsString("class=\"cadeau-statut\" data-label=\"Statut\"")))
+                .andExpect(content().string(not(containsString("class=\"cadeau-tags\""))))
                 .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
                 .andExpect(content().string(containsString("aria-label=\"Actions pour Cadeau visible\"")))
                 .andExpect(content().string(containsString("/cadeaux/" + visibleId + "/modifier")))
@@ -135,6 +139,25 @@ class ListesWebTest {
                 .andExpect(content().string(containsString("secret.example")))
                 .andExpect(content().string(containsString("/personnes")))
                 .andExpect(content().string(not(containsString("Ajouter"))));
+    }
+
+    @Test
+    void lesTagsSontRendusDansUneCelluleDedieeSeulementSiLeCadeauEnPossede() throws Exception {
+        Long tagId = tagsService.creer(listeId, "alice", "promo").getId();
+        cadeauxService.modifier(listeId, visibleId, "alice", new CadeauCommande("Cadeau visible",
+                "https://visible.example/y", new BigDecimal("20"), mamanId, false, false, Set.of(tagId)));
+
+        mvc.perform(get("/listes/" + listeId).with(user("alice"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("class=\"cadeau-tags\" data-label=\"Tags\"")))
+                .andExpect(content().string(containsString(">promo</span>")))
+                .andExpect(content().string(containsString("class=\"cadeau-statut\" data-label=\"Statut\"")));
+
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("bob")).param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("class=\"cadeau-tags\" data-label=\"Tags\"")))
+                .andExpect(content().string(containsString("class=\"cadeau-statut\" data-label=\"Statut\"")))
+                .andExpect(content().string(not(containsString("statut-form"))))
+                .andExpect(content().string(not(containsString("menu-actions"))));
     }
 
     @Test
@@ -200,6 +223,7 @@ class ListesWebTest {
                         .header("HX-Request", "true").param("statut", "COMMANDE"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("data-statut=\"COMMANDE\"")))
+                .andExpect(content().string(containsString("class=\"cadeau-statut\" data-label=\"Statut\"")))
                 .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
                 .andExpect(content().string(not(containsString("data-label=\"Pour\""))))
                 .andExpect(content().string(containsString("aria-label=\"À acheter: 1 cadeaux\"")))
