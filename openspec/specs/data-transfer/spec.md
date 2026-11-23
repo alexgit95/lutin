@@ -6,11 +6,11 @@ Let the administrator export the whole database to a versioned JSON file and res
 ## Requirements
 
 ### Requirement: Export de la base
-Le système SHALL permettre à l'administrateur d'exporter toute la base dans un fichier JSON téléchargeable, depuis l'écran d'administration, par une requête `POST` protégée par CSRF. Le fichier SHALL contenir toutes les lignes des tables utilisateurs, listes, personnes, tags, cadeaux et leurs tags, partages, wishlists, souhaits, partages de wishlists, avis et alertes de remboursement. Il SHALL être produit en flux, lu par lots, sans charger la base en mémoire, avec `Cache-Control: no-store` et un nom `lutin-export-AAAA-MM-JJ.json`.
+Le système SHALL permettre à l'administrateur d'exporter toute la base dans un fichier JSON téléchargeable, depuis l'écran d'administration, par une requête `POST` protégée par CSRF. Le même contenu SHALL aussi être servi à un porteur de clé d'API de sauvegarde par `GET /api/sauvegarde` (voir la capacité `backup-api`). Le fichier SHALL contenir toutes les lignes des tables utilisateurs, listes, personnes, tags, cadeaux et leurs tags, partages, wishlists, souhaits, partages de wishlists, avis, alertes de remboursement et clés d'API de sauvegarde. Il SHALL être produit en flux, lu par lots, sans charger la base en mémoire, avec `Cache-Control: no-store` et un nom `lutin-export-AAAA-MM-JJ.json`.
 
 #### Scenario: Export complet
 - **WHEN** l'administrateur lance l'export
-- **THEN** un fichier JSON est téléchargé avec toutes les lignes de toutes les tables
+- **THEN** un fichier JSON est téléchargé avec toutes les lignes de toutes les tables, clés d'API comprises
 
 #### Scenario: Export non mis en cache
 - **WHEN** l'administrateur lance l'export
@@ -19,6 +19,10 @@ Le système SHALL permettre à l'administrateur d'exporter toute la base dans un
 #### Scenario: Export d'une grande base
 - **WHEN** une table compte plus d'un lot de lignes
 - **THEN** toutes ses lignes figurent dans le fichier et aucune n'est dupliquée
+
+#### Scenario: Même contenu par l'API
+- **WHEN** un porteur de clé appelle `GET /api/sauvegarde`
+- **THEN** il reçoit un fichier de même structure que l'export de l'administrateur
 
 ### Requirement: Format versionné de l'export
 Le fichier SHALL être un objet JSON portant `format` (`lutin-export`), `version` (entier de format), `mode` (`local` ou `cloudflare`), la version de l'application et la date d'export, puis les tables dans l'ordre des clés étrangères, chaque ligne ayant pour clés les noms de colonnes. Le numéro de version SHALL changer à chaque modification du schéma exporté. Un test SHALL échouer si une colonne d'entité manque dans les descripteurs de l'export.
@@ -130,15 +134,19 @@ Le système SHALL accepter des fichiers jusqu'à 100 Mo et SHALL refuser un fich
 - **THEN** l'écran d'administration indique le nombre de lignes importées par table
 
 ### Requirement: Export et import réservés à l'administrateur
-Le système SHALL réserver l'export et l'import aux administrateurs, avec protection CSRF. Le contenu du fichier SHALL ne jamais être écrit dans les journaux ; seuls l'événement, le pseudo ou le login de l'administrateur et les totaux le SHALL.
+Le système SHALL réserver l'export depuis l'écran d'administration et l'import aux administrateurs, avec protection CSRF ; l'export SHALL aussi être accessible par l'endpoint de sauvegarde à un porteur de clé d'API valide, alors que l'import SHALL rester réservé aux administrateurs. Le contenu du fichier SHALL ne jamais être écrit dans les journaux ; seuls l'événement, le pseudo ou le login de l'administrateur (ou le nom de la clé d'API) et les totaux le SHALL.
 
 #### Scenario: Accès refusé
-- **WHEN** un utilisateur non administrateur tente l'export ou l'import
+- **WHEN** un utilisateur non administrateur tente l'export ou l'import depuis l'application
 - **THEN** la requête est refusée (403)
 
 #### Scenario: CSRF
-- **WHEN** une requête d'export ou d'import arrive sans jeton CSRF
+- **WHEN** une requête d'export ou d'import de l'écran d'administration arrive sans jeton CSRF
 - **THEN** elle est refusée (403)
+
+#### Scenario: Import refusé à une clé d'API
+- **WHEN** une requête d'import présente une clé d'API de sauvegarde et aucune session administrateur
+- **THEN** elle est refusée et la base n'est pas modifiée
 
 #### Scenario: Journaux
 - **WHEN** un export ou un import a lieu

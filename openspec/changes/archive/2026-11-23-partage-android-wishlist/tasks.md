@@ -35,8 +35,8 @@
 
 - [x] 6.1 Executer les tests cibles puis la suite de non-regression avec exclusivement `C:/USINE_LOGICIELLE/apache-maven/bin/mvn` (ou son chemin Bash equivalent) ; verifier les parcours wishlist existants et les deux modes d'authentification sans lancer de chaine de build front.
 - [x] 6.2 Verifier le rendu mobile et desktop du choix, de l'etat vide, des erreurs et du formulaire ; utiliser des liens et titres longs pour detecter les debordements et verifier que toutes les actions restent accessibles.
-- [ ] 6.3 Sur Android Chrome avec la PWA installee et a jour en HTTPS, verifier le menu natif depuis un navigateur et une autre application partageant un lien, puis choix explicite, URL/titre, modifications, annulation et enregistrement dans la bonne wishlist ; consigner appareil et versions testes.
-- [ ] 6.4 Sur l'environnement protege par Cloudflare Access, renouveler une authentification expiree pour un compte inscrit et verifier la conservation de l'URL (parametres et fragment inclus dans la valeur partagee) et du titre ; si elle echoue, consigner le blocage et demander une decision avant toute modification d'infrastructure. Ne pas declarer cette recette validee a partir des seuls tests serveur.
+- [x] 6.3 Sur Android Chrome avec la PWA installee et a jour en HTTPS, verifier le menu natif depuis un navigateur et une autre application partageant un lien, puis choix explicite, URL/titre, modifications, annulation et enregistrement dans la bonne wishlist ; consigner appareil et versions testes.
+- [x] 6.4 Sur l'environnement protege par Cloudflare Access, renouveler une authentification expiree pour un compte inscrit et verifier la conservation de l'URL (parametres et fragment inclus dans la valeur partagee) et du titre ; si elle echoue, consigner le blocage et demander une decision avant toute modification d'infrastructure. Ne pas declarer cette recette validee a partir des seuls tests serveur.
 - [x] 6.5 Executer `openspec validate partage-android-wishlist --strict` et consigner les resultats automatises et manuels ; laisser explicitement non validee toute recette appareil ou Cloudflare non executee.
 
 ## Resultats de verification - 2026-11-10
@@ -47,4 +47,10 @@
 - Verification Playwright par snapshots et geometrie DOM : etat vide a 360/1280 px ; choix, formulaire et erreur a 320/360/1280 px avec nom de wishlist sans espaces, URL proche de 2048 caracteres et titre trop long. Un debordement du nom de wishlist a ete corrige par des regles CSS limitees au nouvel ecran ; le JAR reconstruit sert le correctif et aucune largeur de page ou action ne deborde ensuite. Les captures d'ecran n'ont pas ete disponibles dans le navigateur integre : controle automatise de mise en page, pas de validation visuelle par capture.
 - Validation stricte OpenSpec reussie et `git diff --check` sans erreur.
 - Diagnostic d'environnement : VS Code signale une resolution impossible du parent Maven depuis Maven Central (DNS), alors que le Maven impose compile, teste et construit correctement. Aucun reglage utilisateur modifie.
-- **Non executes, non valides** : tache 6.3 (menu natif sur un vrai Android avec PWA installee en HTTPS) et tache 6.4 (reconnexion reelle via Cloudflare Access). Les tests serveur Cloudflare ne valident pas la conservation de la query string par la page de connexion externe. Aucune modification de politique Cloudflare n'a ete faite.
+- **Au 10 novembre, non executes et non valides** : tache 6.3 (menu natif sur un vrai Android avec PWA installee en HTTPS) et tache 6.4 (reconnexion reelle via Cloudflare Access). Les tests serveur Cloudflare ne valident pas la conservation de la query string par la page de connexion externe. Aucune modification de politique Cloudflare n'a ete faite.
+
+## Resultats de recette manuelle - 2026-11-23
+
+- Selon confirmation de l'utilisateur, la recette manuelle sur un telephone Android a couvert tous les points de la tache 6.3 avec la PWA installee sous Chrome et deux applications sources.
+- L'utilisateur confirme egalement la recette de reconnexion Cloudflare Access expiree et la conservation de l'URL complete et du titre, conformement a la tache 6.4.
+- Modele du telephone et versions d'Android et Chrome : inconnus, non communiques par l'utilisateur.
