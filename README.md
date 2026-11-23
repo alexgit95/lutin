@@ -213,6 +213,12 @@ C:\USINE_LOGICIELLE\apache-maven\bin\mvn test
 ```
 Les tests utilisent SQLite (profil `test`).
 
+## Mises à jour des dépendances
+
+Renovate est configuré pour fusionner automatiquement les pull requests de mise à jour `minor` et `patch` lorsque les protections GitHub sont satisfaites. Les mises à jour majeures restent manuelles ; aucune règle d'automerge n'est ajoutée pour `pin`, `pinDigest` ou `digest`.
+
+La protection de `main` impose une pull request à jour et la réussite du contrôle GitHub Actions `test-and-coverage`, sans contournement. L'automerge dépend aussi des permissions de Renovate et des paramètres GitHub du dépôt. Les tests exécutés sur la pull request ne construisent pas l'image Docker : sa construction et sa publication ont lieu après un push.
+
 ## Limites connues
 - Le dialecte SQLite n'applique pas les contraintes d'unicité composites (tag nom + liste, partage liste + lecteur, wishlist nom + propriétaire, partage wishlist + lecteur) : elles sont vérifiées par les services et déclarées pour PostgreSQL.
 - Un lecteur retiré d'une wishlist ne peut plus libérer les articles qu'il avait pris, et le propriétaire, aveugle, ne le peut pas non plus : ils restent « pris » tant que le partage n'est pas rétabli.
