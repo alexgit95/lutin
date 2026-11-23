@@ -6,7 +6,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 - Renovate peut fusionner automatiquement les mises à jour mineures et correctives après les contrôles GitHub requis ; les mises à jour majeures restent manuelles et les règles pour `pin` et les digests ne changent pas.
-- La branche `main` est protégée par une pull request à jour et le contrôle `test-and-coverage`. Les permissions de Renovate et la fusion effective restent à vérifier sur GitHub ; le workflow de déploiement est inchangé.
+- Paramétrage GitHub : protection de `main` par pull request à jour et contrôle `test-and-coverage` obligatoire, sans contournement, et activation de l'automerge. Les réglages et vérifications sont détaillés dans [la documentation GitHub](docs/github-configuration.md) ; le workflow de déploiement est inchangé.
 
 ## [0.18.0] - 2026-11-23
 
