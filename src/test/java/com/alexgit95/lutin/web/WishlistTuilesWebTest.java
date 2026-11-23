@@ -19,6 +19,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -90,6 +92,65 @@ class WishlistTuilesWebTest {
         assertThat(html).contains("data-lien=\"" + URL_ARTICLE + "\"").contains(">Copier<")
                 .doesNotContain(">Voir<").contains("Casque audio").contains("Livre");
     }
+
+    @Test
+    void lesTroisVuesAffichentLeTotalSansRevelerLesReservationsAuProprietaire() throws Exception {
+        souhaitService.modifier(wishlistId, avecUrlId, "alice",
+                new SouhaitCommande("Casque audio", URL_ARTICLE, new BigDecimal("12.35")));
+        souhaitService.prendre(wishlistId, avecUrlId, "bob");
+
+        for (String html : new String[]{page("/wishlists/" + wishlistId, "alice"),
+                page("/wishlists/" + wishlistId, "bob"), page("/p/" + jeton, null)}) {
+            assertThat(html).contains("Total des prix renseign", "12,35", "1 article sans prix");
+        }
+        assertThat(page("/wishlists/" + wishlistId, "alice"))
+                .doesNotContain("Pris par", "ruban-pris");
+    }
+
+        @Test
+        void leTotalSuitLesModificationsEtLaSuppressionEtDistingueZeroDePrixAbsent() throws Exception {
+        assertThat(page("/wishlists/" + wishlistId, "alice"))
+            .contains("0,00", "2 articles sans prix");
+        souhaitService.modifier(wishlistId, avecUrlId, "alice",
+            new SouhaitCommande("Casque audio", URL_ARTICLE, new BigDecimal("12.35")));
+        souhaitService.modifier(wishlistId, sansUrlId, "alice", new SouhaitCommande("Livre", null, BigDecimal.ZERO));
+        assertThat(page("/wishlists/" + wishlistId, "alice"))
+            .contains("12,35").doesNotContain("article sans prix", "articles sans prix");
+        souhaitService.supprimer(wishlistId, avecUrlId, "alice");
+        souhaitService.supprimer(wishlistId, sansUrlId, "alice");
+        assertThat(page("/wishlists/" + wishlistId, "alice"))
+            .contains("0,00").doesNotContain("article sans prix", "articles sans prix");
+        }
+
+        @Test
+        void leTotalEstGlobalSurLaDeuxiemePageEtNeChangePasAvecLesReservations() throws Exception {
+        souhaitService.modifier(wishlistId, avecUrlId, "alice",
+            new SouhaitCommande("Casque audio", URL_ARTICLE, new BigDecimal("12.35")));
+        for (int numero = 0; numero < 50; numero++) {
+            souhaitService.creer(wishlistId, "alice", new SouhaitCommande("Article " + numero, null,
+                new BigDecimal("0.01")));
+        }
+        String chemin = "/wishlists/" + wishlistId + "?page=1";
+        assertThat(page(chemin, "alice")).contains("12,85", "1 article sans prix");
+        souhaitService.prendre(wishlistId, avecUrlId, "bob");
+        assertThat(page(chemin, "alice")).contains("12,85", "1 article sans prix")
+            .doesNotContain("Pris par", "ruban-pris");
+        souhaitService.liberer(wishlistId, avecUrlId, "bob", false);
+        assertThat(page(chemin, "alice")).contains("12,85", "1 article sans prix");
+        assertThat(page("/wishlists/" + wishlistId + "?page=1", "bob")).contains("12,85");
+        assertThat(page("/p/" + jeton + "?page=1", null)).contains("12,85");
+        }
+
+        @Test
+        void lesAccesNonAutorisesNeRevelentPasLeTotal() throws Exception {
+        utilisateurs.saveAndFlush(new Utilisateur("carol", "hash"));
+        String prive = mvc.perform(get("/wishlists/" + wishlistId).with(user("carol")))
+            .andExpect(status().isForbidden()).andReturn().getResponse().getContentAsString();
+        String invalide = mvc.perform(get("/p/jeton-invalide")).andExpect(status().isNotFound())
+            .andReturn().getResponse().getContentAsString();
+        assertThat(prive).doesNotContain("Total des prix renseign");
+        assertThat(invalide).doesNotContain("Total des prix renseign");
+        }
 
     @Test
     void leProprietaireVoitUnLienEtUnBoutonCopierSurLArticleAvecUrlEtRienSurLautre() throws Exception {

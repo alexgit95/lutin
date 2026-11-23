@@ -43,5 +43,9 @@
       th:hidden="${nombre == null or nombre == 0}" th:text="${nombre}"
       th:attr="hx-swap-oob=${oob ? 'outerHTML' : null}">0</span>
 <span th:fragment="montant(valeur)" th:text="${valeur == null ? '—' : #numbers.formatDecimal(valeur, 1, 'WHITESPACE', 2, 'COMMA') + ' €'}"></span>
+<p th:fragment="totalWishlist(vue)" class="total-wishlist">
+    <strong>Total des prix renseignés : <span th:replace="~{fragments :: montant(${vue.totalPrix()})}"></span></strong>
+    <span th:if="${vue.sansPrix() > 0}" th:text="' · ' + ${vue.sansPrix()} + (${vue.sansPrix() > 1} ? ' articles sans prix' : ' article sans prix')"></span>
+</p>
 </body>
 </html>

@@ -147,6 +147,7 @@ tr.masque td { color: #777; }
 .entete-wishlist { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
 .entete-wishlist h1 { font-size: 1.8rem; letter-spacing: -.01em; }
 .entete-wishlist h1 small { display: block; margin-top: .2rem; font-size: .9rem; font-weight: 400; opacity: .6; }
+.total-wishlist { margin: 0 0 1rem; overflow-wrap: anywhere; }
 
 .tuiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.1rem; }
 .tuile { position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; border-radius: 20px; box-shadow: 0 1px 2px rgba(27, 27, 58, .06), 0 10px 28px rgba(27, 27, 58, .07); transition: transform .2s ease, box-shadow .2s ease; }

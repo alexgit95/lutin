@@ -12,6 +12,7 @@
             <a class="bouton" th:href="@{/wishlists/{id}/souhaits/nouveau(id=${vue.id()})}">+ Ajouter un article</a>
         </div>
     </div>
+    <p th:replace="~{fragments :: totalWishlist(${vue})}"></p>
     <nav th:replace="~{fragments :: ongletsWishlist(${vue.id()}, 'articles')}"></nav>
     <div th:replace="~{fragments :: messages}"></div>
 

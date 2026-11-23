@@ -15,6 +15,7 @@
     <div class="entete-wishlist">
         <h1 th:text="${vue.nom()}">Wishlist</h1>
     </div>
+    <p th:replace="~{fragments :: totalWishlist(${vue})}"></p>
     <div th:replace="~{fragments :: messages}"></div>
 
     <p class="vide" th:if="${#lists.isEmpty(vue.souhaits())}">Aucun article pour le moment.</p>

@@ -2,6 +2,12 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.18.0] - 2026-11-23
+
+### Added
+- Les vues propriétaire, lecteur et publique des wishlists affichent la somme des prix renseignés et le nombre d'articles sans prix, sur toutes les pages et quel que soit l'état des réservations.
+- L'agrégation en base utilise les centimes et préserve la pagination ainsi que l'aveuglement du propriétaire. Aucun changement de schéma ni de pipeline.
+
 ## [0.17.0] - 2026-11-20
 
 ### Added

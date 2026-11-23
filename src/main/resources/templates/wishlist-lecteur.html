@@ -8,6 +8,7 @@
         <h1><span th:text="${vue.nom()}">Wishlist</span>
             <small>de <span th:text="${vue.proprietaire()}">alice</span></small></h1>
     </div>
+    <p th:replace="~{fragments :: totalWishlist(${vue})}"></p>
     <div th:replace="~{fragments :: messages}"></div>
 
     <section class="panneau avis-liste" th:unless="${#lists.isEmpty(avis)}">

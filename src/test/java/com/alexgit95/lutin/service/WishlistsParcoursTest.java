@@ -82,6 +82,39 @@ class WishlistsParcoursTest {
                 .filter(a -> a.getDestinataire().getLogin().equals(login)).toList());
     }
 
+    @Test
+    void leTotalDesPrixEstGlobalPrecisEtIsoleParWishlist() {
+        var vide = souhaits.totalPrix(wishlistId);
+        assertThat(vide.getTotalCentimes()).isZero();
+        assertThat(vide.getSansPrix()).isZero();
+
+        Long pris = souhaitService.creer(wishlistId, "alice",
+                new SouhaitCommande("Decimal", null, new BigDecimal("12.35"))).getId();
+        souhaitService.prendre(wishlistId, pris, "bob");
+        souhaitService.creer(wishlistId, "alice", new SouhaitCommande("Zero", null, BigDecimal.ZERO));
+        for (int numero = 0; numero < 51; numero++) {
+            souhaitService.creer(wishlistId, "alice", new SouhaitCommande("Centime " + numero, null,
+                    new BigDecimal("0.01")));
+        }
+        article("Sans prix");
+        Long autre = wishlistService.creer("alice", "Autre").getId();
+        souhaitService.creer(autre, "alice", new SouhaitCommande("Autre", null, new BigDecimal("999.99")));
+
+        var total = souhaits.totalPrix(wishlistId);
+        assertThat(total.getTotalCentimes()).isEqualTo(1286L);
+        assertThat(total.getSansPrix()).isEqualTo(1L);
+
+        var proprietaire = souhaitService.vueProprietaire(wishlistId, "alice", 1);
+        var lecteur = souhaitService.vueLecteur(wishlistId, "bob", 0);
+        var publique = souhaitService.vuePublique(wishlists.findById(wishlistId).orElseThrow(), 1);
+        assertThat(proprietaire.totalPrix()).isEqualByComparingTo("12.86");
+        assertThat(lecteur.totalPrix()).isEqualByComparingTo(proprietaire.totalPrix());
+        assertThat(publique.totalPrix()).isEqualByComparingTo(proprietaire.totalPrix());
+        assertThat(proprietaire.sansPrix()).isEqualTo(1);
+        assertThat(lecteur.sansPrix()).isEqualTo(1);
+        assertThat(publique.sansPrix()).isEqualTo(1);
+    }
+
     // --- Wishlists ---
 
     @Test

@@ -63,10 +63,12 @@ public class SouhaitService {
     public VueWishlistProprietaire vueProprietaire(Long wishlistId, String login, int page) {
         Wishlist wishlist = acces.proprietaire(wishlistId, login);
         Page<Souhait> lot = lot(wishlistId, page);
+        SouhaitRepository.TotalPrix total = souhaits.totalPrix(wishlistId);
         return new VueWishlistProprietaire(wishlist.getId(), wishlist.getNom(),
                 lot.map(s -> new VueSouhaitProprietaire(s.getId(), s.getNom(), initiale(s.getNom()), s.getUrl(),
                         hote(s.getUrl()), s.getPrix())).getContent(),
-                lot.getNumber(), lot.getTotalPages());
+            lot.getNumber(), lot.getTotalPages(), BigDecimal.valueOf(total.getTotalCentimes(), 2),
+            total.getSansPrix());
     }
 
     @Transactional(readOnly = true)
@@ -83,10 +85,12 @@ public class SouhaitService {
 
     private VueWishlistLecteur vueLecteur(Wishlist wishlist, String proprietaire, int page) {
         Page<Souhait> lot = lot(wishlist.getId(), page);
+        SouhaitRepository.TotalPrix total = souhaits.totalPrix(wishlist.getId());
         return new VueWishlistLecteur(wishlist.getId(), wishlist.getNom(), proprietaire,
                 lot.map(s -> new VueSouhaitLecteur(s.getId(), s.getNom(), initiale(s.getNom()), s.getUrl(),
                         hote(s.getUrl()), s.getPrix(), s.nomPreneurAffiche())).getContent(),
-                lot.getNumber(), lot.getTotalPages());
+            lot.getNumber(), lot.getTotalPages(), BigDecimal.valueOf(total.getTotalCentimes(), 2),
+            total.getSansPrix());
     }
 
     public Souhait creer(Long wishlistId, String login, SouhaitCommande commande) {

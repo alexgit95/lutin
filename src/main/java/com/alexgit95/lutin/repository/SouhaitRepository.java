@@ -13,6 +13,15 @@ import java.util.Optional;
 
 public interface SouhaitRepository extends JpaRepository<Souhait, Long> {
 
+        interface TotalPrix {
+                Long getTotalCentimes();
+                Long getSansPrix();
+        }
+
+        @Query("select coalesce(sum(cast(round(s.prix * 100, 0) as long)), 0) as totalCentimes, "
+                        + "count(s) - count(s.prix) as sansPrix from Souhait s where s.wishlist.id = :wishlistId")
+        TotalPrix totalPrix(@Param("wishlistId") Long wishlistId);
+
     // Ordre de création : il ne dépend jamais de l'état « pris ».
     Page<Souhait> findByWishlistIdOrderByIdAsc(Long wishlistId, Pageable pageable);
 
