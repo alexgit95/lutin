@@ -10,6 +10,8 @@
 
     <div class="entete">
         <h1 th:text="${vue.nom()}">Liste</h1>
+          <span class="progression-personnes" th:unless="${vue.lecteur()}"
+              th:text="${vue.personnesTerminees()} + (${vue.personnesTerminees() == 1} ? ' personne terminée / ' : ' personnes terminées / ') + ${vue.totalPersonnes()}">0 personnes terminées / 0</span>
         <span class="badge" th:if="${vue.lecteur()}">Lecture seule · liste de <b th:text="${vue.proprietaire()}">alice</b></span>
         <div class="actions" th:unless="${vue.lecteur()}">
             <a class="bouton" th:href="@{/listes/{id}/cadeaux/nouveau(id=${vue.id()})}">+ Cadeau</a>

@@ -10,6 +10,9 @@ import com.alexgit95.lutin.domain.Utilisateur;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
@@ -18,6 +21,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -49,6 +54,48 @@ class ModeleDonneesTest {
 
     private Utilisateur utilisateur(String login) {
         return utilisateurs.saveAndFlush(new Utilisateur(login, "hash"));
+    }
+
+    @Test
+    void miseAJourSqliteConserveLesPersonnesExistantes(@TempDir Path dossier) throws Exception {
+        String url = "jdbc:sqlite:" + dossier.resolve("ancien.db");
+        try (var connexion = DriverManager.getConnection(url); var commande = connexion.createStatement()) {
+            commande.execute("create table personne (id integer primary key, nom varchar(100) not null, budget numeric(12,2) not null, liste_id bigint not null)");
+            commande.execute("insert into personne (id, nom, budget, liste_id) values (1, 'Maman', 25, 1)");
+        }
+        var registre = new StandardServiceRegistryBuilder()
+                .applySetting("hibernate.connection.url", url)
+                .applySetting("hibernate.connection.driver_class", "org.sqlite.JDBC")
+                .applySetting("hibernate.dialect", "org.hibernate.community.dialect.SQLiteDialect")
+                .applySetting("hibernate.hbm2ddl.auto", "update")
+                .build();
+        try {
+            try (var sessionFactory = new MetadataSources(registre).addAnnotatedClass(Personne.class)
+                    .addAnnotatedClass(ListeAchat.class).addAnnotatedClass(Utilisateur.class)
+                    .buildMetadata().buildSessionFactory()) {
+                try (var connexion = DriverManager.getConnection(url); var commande = connexion.createStatement();
+                     var resultat = commande.executeQuery("select nom, budget, termine from personne where id = 1")) {
+                    assertThat(resultat.next()).isTrue();
+                    assertThat(resultat.getString("nom")).isEqualTo("Maman");
+                    assertThat(resultat.getBigDecimal("budget")).isEqualByComparingTo("25");
+                    assertThat(resultat.getBoolean("termine")).isFalse();
+                    assertThat(resultat.wasNull()).isFalse();
+                }
+            }
+        } finally {
+            StandardServiceRegistryBuilder.destroy(registre);
+        }
+    }
+
+    @Test
+    void persisteEtatTermineDePersonne() {
+        ListeAchat liste = listes.saveAndFlush(new ListeAchat("Noel", utilisateur("alice")));
+        Personne personne = personnes.saveAndFlush(new Personne("Maman", BigDecimal.ZERO, liste));
+        assertThat(personnes.findById(personne.getId()).orElseThrow().isTermine()).isFalse();
+
+        personne.setTermine(true);
+        personnes.saveAndFlush(personne);
+        assertThat(personnes.findById(personne.getId()).orElseThrow().isTermine()).isTrue();
     }
 
     @Test

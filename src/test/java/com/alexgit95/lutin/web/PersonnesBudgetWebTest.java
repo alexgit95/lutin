@@ -28,8 +28,10 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -93,8 +95,23 @@ class PersonnesBudgetWebTest {
         return texte.split(java.util.regex.Pattern.quote(motif), -1).length - 1;
     }
 
-    @Test
-    void lesActionsDeChaquePersonneSontUniquementDansUnSousMenu() throws Exception {
+        @Test
+        void etatTermineEstProtegeEtAfficheDansLeMenu() throws Exception {
+        String chemin = "/listes/" + listeId + "/personnes/" + mamanId + "/termine";
+        mvc.perform(post(chemin).with(user("alice")).param("termine", "true"))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(chemin).with(user("bob")).with(csrf()).param("termine", "true"))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(chemin).with(user("alice")).with(csrf()).param("termine", "true"))
+            .andExpect(status().is3xxRedirection());
+        assertThat(page()).contains("Tous les cadeaux dans la liste", "Marquer comme à compléter");
+        mvc.perform(post(chemin).with(user("alice")).with(csrf()).param("termine", "false"))
+            .andExpect(status().is3xxRedirection());
+        assertThat(personnes.findById(mamanId).orElseThrow().isTermine()).isFalse();
+        }
+
+        @Test
+        void lesActionsDeChaquePersonneSontUniquementDansUnSousMenu() throws Exception {
         String html = page();
 
         assertThat(occurrences(html, "<details class=\"menu-actions\"")).isEqualTo(2);

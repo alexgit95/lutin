@@ -117,6 +117,19 @@ class ImportPersonnesTest {
     }
 
     @Test
+    void importReinitialiseEtatSansModifierPersonneExistante() {
+        personnesService.definirTermine(sourceId, mamanId, "alice", true);
+        Long dejaPresent = personnes.findByListeIdOrderByNom(cibleId).getFirst().getId();
+        personnesService.definirTermine(cibleId, dejaPresent, "alice", true);
+
+        personnesService.importer(cibleId, sourceId, "alice", List.of(mamanId, papaId));
+
+        assertThat(personnes.findById(dejaPresent).orElseThrow().isTermine()).isTrue();
+        assertThat(personnes.findByListeIdOrderByNom(cibleId)).filteredOn(p -> p.getNom().equals("Maman"))
+                .singleElement().satisfies(p -> assertThat(p.isTermine()).isFalse());
+    }
+
+    @Test
     void laCopieEstIndependanteDeLaSource() {
         personnesService.importer(cibleId, sourceId, "alice", List.of(mamanId));
         Long copieId = personnes.findByListeIdOrderByNom(cibleId).stream()

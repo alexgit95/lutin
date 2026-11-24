@@ -1,8 +1,14 @@
 package com.alexgit95.lutin.web;
 
 import com.alexgit95.lutin.domain.ApiKey;
+import com.alexgit95.lutin.domain.Utilisateur;
 import com.alexgit95.lutin.repository.ApiKeyRepository;
+import com.alexgit95.lutin.repository.ListeAchatRepository;
+import com.alexgit95.lutin.repository.PersonneRepository;
+import com.alexgit95.lutin.repository.UtilisateurRepository;
 import com.alexgit95.lutin.service.CleApiService;
+import com.alexgit95.lutin.service.ListeAchatService;
+import com.alexgit95.lutin.service.PersonneService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +21,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -35,6 +43,11 @@ class ApiSauvegardeWebTest {
     @Autowired MockMvc mvc;
     @Autowired CleApiService service;
     @Autowired ApiKeyRepository cles;
+    @Autowired UtilisateurRepository utilisateurs;
+    @Autowired ListeAchatRepository listes;
+    @Autowired PersonneRepository personnes;
+    @Autowired ListeAchatService listesService;
+    @Autowired PersonneService personnesService;
 
     private String cle;
 
@@ -51,6 +64,24 @@ class ApiSauvegardeWebTest {
 
     private ApiKey ligne() {
         return cles.findAll().get(0);
+    }
+
+    @Test
+    void sauvegardeApiContientLEtatDesPersonnes() throws Exception {
+        Utilisateur utilisateur = utilisateurs.saveAndFlush(new Utilisateur("sauvegarde-test", "hash"));
+        Long listeId = listesService.creer(utilisateur.getLogin(), "Liste").getId();
+        Long personneId = personnesService.creer(listeId, utilisateur.getLogin(), "Maman", BigDecimal.ZERO).getId();
+        personnesService.definirTermine(listeId, personneId, utilisateur.getLogin(), true);
+        try {
+            mvc.perform(get("/api/sauvegarde").header("Authorization", "Bearer " + cle))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("\"version\":4")))
+                    .andExpect(content().string(containsString("\"termine\":true")));
+        } finally {
+            personnes.deleteById(personneId);
+            listes.deleteById(listeId);
+            utilisateurs.deleteById(utilisateur.getId());
+        }
     }
 
     @Test

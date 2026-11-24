@@ -52,6 +52,19 @@ class TransfertTest extends BaseTransfertTest {
     }
 
     @Test
+    void sauvegardeEtRestaureLesEtatsDeCompletion() {
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        Long autreId = personnesService.creer(listeId, "alice", "Papa", BigDecimal.ZERO).getId();
+        byte[] sauvegarde = exporter();
+        assertThat(stable(sauvegarde)).contains("\"termine\":true").contains("\"termine\":false");
+        personnesService.definirTermine(listeId, mamanId, "alice", false);
+        personnesService.definirTermine(listeId, autreId, "alice", true);
+        importer(sauvegarde);
+        assertThat(personnes.findById(mamanId).orElseThrow().isTermine()).isTrue();
+        assertThat(personnes.findById(autreId).orElseThrow().isTermine()).isFalse();
+    }
+
+    @Test
     void restaureLeTiersEtSaDateEtAccepteUnAncienExport() {
         Cadeau avance = cadeaux.findAll().stream().filter(Cadeau::isPourTiers).findFirst().orElseThrow();
         avance.setStatut(Statut.COMMANDE);
@@ -78,7 +91,7 @@ class TransfertTest extends BaseTransfertTest {
     void lExportContientToutesLesTablesDansLOrdreAvecUnEnteteVersionne() {
         String json = stable(exporter());
 
-        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":3,\"mode\":\"local\"")
+        assertThat(json).startsWith("{\"format\":\"lutin-export\",\"version\":4,\"mode\":\"local\"")
                 .contains("\"versionApplication\":\"").contains("\"exporteLe\":\"\"");
         int position = json.indexOf("\"tables\":{");
         for (TableTransfert table : Tables.TOUTES) {
@@ -211,7 +224,7 @@ class TransfertTest extends BaseTransfertTest {
     void unFichierDUneAutreVersionOuUnAutreFormatOuUnAutreModeEstRefuse() {
         String json = stable(exporter());
 
-        refuse(remplacerLePremier(json, "\"version\":3", "\"version\":4"), "Version de format incompatible");
+        refuse(remplacerLePremier(json, "\"version\":4", "\"version\":3"), "Version de format incompatible");
         refuse(remplacerLePremier(json, "\"format\":\"lutin-export\"", "\"format\":\"autre\""), "pas un export Lutin");
         refuse(remplacerLePremier(json, "\"mode\":\"local\"", "\"mode\":\"cloudflare\""), "mode");
     }

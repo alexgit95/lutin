@@ -81,7 +81,9 @@ public class DashboardService {
         return new VueListe(listeId, a.liste().getNom(), a.liste().getProprietaire().getLogin(), lecteur,
                 personnes.sommeBudgets(listeId), cadeaux.sommeDebourse(listeId), cadeaux.sommeResteAPayer(listeId),
             repartition, resultat.getTotalElements(), vuesTags, vues, groupes,
-                tagId, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1));
+                tagId, resultat.getNumber(), Math.max(resultat.getTotalPages(), 1),
+                lecteur ? null : personnes.countByListeIdAndTermineTrue(listeId),
+                lecteur ? null : personnes.countByListeId(listeId));
     }
 
     public LotCadeaux chargerLot(Long listeId, String login, Long tagId, int page) {
@@ -102,7 +104,8 @@ public class DashboardService {
 
         for (VueCadeau cadeau : cadeaux) {
             if (!premier && !Objects.equals(personneId, cadeau.personneId())) {
-                groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours)));
+                groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours),
+                    enCours.getFirst().personneTerminee()));
                 enCours = new ArrayList<>();
             }
             if (premier || !Objects.equals(personneId, cadeau.personneId())) {
@@ -113,7 +116,8 @@ public class DashboardService {
             premier = false;
         }
         if (!premier) {
-            groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours)));
+                groupes.add(new VueListe.VueGroupe(personneId, personne, List.copyOf(enCours),
+                    enCours.getFirst().personneTerminee()));
         }
         return List.copyOf(groupes);
     }

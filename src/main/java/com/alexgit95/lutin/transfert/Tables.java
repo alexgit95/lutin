@@ -22,7 +22,7 @@ import static com.alexgit95.lutin.transfert.TypeColonne.TEXTE;
 public final class Tables {
 
     public static final String FORMAT = "lutin-export";
-    public static final int VERSION = 3;
+        public static final int VERSION = 4;
 
     private static final Set<String> STATUTS = noms(Statut.values());
     private static final Set<String> TYPES_AVIS = noms(TypeAvis.values());
@@ -43,6 +43,7 @@ public final class Tables {
                     id(),
                     texte("nom", "e.nom", true, 100),
                     col("budget", "e.budget", DECIMAL, true),
+                    col("termine", "e.termine", BOOLEEN, true),
                     ref("liste_id", "e.liste.id", "liste_achat")),
             table("tag", "Tag e", true,
                     id(),

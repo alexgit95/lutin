@@ -142,6 +142,45 @@ class ListesWebTest {
     }
 
     @Test
+    void progressionEstGlobaleEtInvisiblePourLeLecteur() throws Exception {
+        personnesService.creer(listeId, "alice", "Sans cadeau", BigDecimal.ZERO);
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        Long tagId = tagsService.creer(listeId, "alice", "promo").getId();
+        cadeauxService.modifier(listeId, visibleId, "alice", new CadeauCommande("Cadeau visible",
+                null, BigDecimal.TEN, mamanId, false, false, Set.of(tagId)));
+        mvc.perform(get("/listes/" + listeId).with(user("alice")).param("tag", tagId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("1 personne terminée / 2")))
+                .andExpect(content().string(containsString("groupe-termine")))
+                .andExpect(content().string(containsString("Tous les cadeaux dans la liste")));
+        mvc.perform(get("/listes/" + listeId).with(user("bob")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("personnes terminées"))))
+                .andExpect(content().string(not(containsString("groupe-termine"))))
+                .andExpect(content().string(not(containsString("Tous les cadeaux dans la liste"))));
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("bob")).param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("groupe-termine"))))
+                .andExpect(content().string(not(containsString("Tous les cadeaux dans la liste"))));
+    }
+
+    @Test
+    void compteurVideEtStatutDuCadeauIndependant() throws Exception {
+        Long vide = listesService.creer("alice", "Vide").getId();
+        mvc.perform(get("/listes/" + vide).with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("0 personnes terminées / 0")));
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        mvc.perform(post("/listes/" + listeId + "/cadeaux/" + visibleId + "/statut")
+                        .with(user("alice")).with(csrf()).header("HX-Request", "true").param("statut", "COMMANDE"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/listes/" + listeId).with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("1 personne terminée / 1")))
+                .andExpect(content().string(containsString("groupe-termine")));
+    }
+
+    @Test
     void lesTagsSontRendusDansUneCelluleDedieeSeulementSiLeCadeauEnPossede() throws Exception {
         Long tagId = tagsService.creer(listeId, "alice", "promo").getId();
         cadeauxService.modifier(listeId, visibleId, "alice", new CadeauCommande("Cadeau visible",
@@ -179,6 +218,23 @@ class ListesWebTest {
                 .andExpect(content().string(containsString("<details class=\"menu-actions\">")))
                 .andExpect(content().string(not(containsString("Lot 00"))))
                 .andExpect(content().string(not(containsString("Charger la suite"))));
+    }
+
+    @Test
+    void lesLotsDuProprietaireConserventLaCompletionDuGroupe() throws Exception {
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        for (int numero = 0; numero < 49; numero++) {
+            cadeauxService.creer(listeId, "alice", new CadeauCommande(
+                    "Lot " + String.format("%02d", numero), null, null, mamanId, false, false, Set.of()));
+        }
+        mvc.perform(get("/listes/" + listeId).with(user("alice")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("groupe-termine")))
+                .andExpect(content().string(containsString("Tous les cadeaux dans la liste")));
+        mvc.perform(get("/listes/" + listeId + "/cadeaux").with(user("alice")).param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("groupe-termine")))
+                .andExpect(content().string(containsString("Tous les cadeaux dans la liste")));
     }
 
     @Test
