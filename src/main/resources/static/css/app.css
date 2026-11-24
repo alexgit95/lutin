@@ -73,6 +73,9 @@ select[class^=st-] { width: auto; margin: 0; padding: .3rem .4rem; border-radius
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th, td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--bord); vertical-align: middle; }
 .groupe-cadeaux table { table-layout: fixed; }
+.groupe-cadeaux.groupe-termine { border: 2px solid #278454; border-radius: 6px; padding: 0 .75rem; margin-bottom: .75rem; }
+.personne-terminee, .progression-personnes { color: #17613a; font-size: .85rem; font-weight: 600; }
+.personne-tete { flex-wrap: wrap; }
 .groupe-cadeaux th:nth-child(1) { width: 45%; }
 .groupe-cadeaux th:nth-child(2) { width: 14%; }
 .groupe-cadeaux th:nth-child(3) { width: 15%; }

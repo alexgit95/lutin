@@ -63,7 +63,7 @@ public class PersonneService {
             Object[] ligne = sommes.get(p.getId());
             return new VuePersonneBudget(p.getId(), p.getNom(), p.getBudget(),
                     ligne == null ? BigDecimal.ZERO : (BigDecimal) ligne[1],
-                    ligne == null ? BigDecimal.ZERO : (BigDecimal) ligne[2]);
+                    ligne == null ? BigDecimal.ZERO : (BigDecimal) ligne[2], p.isTermine());
         }).toList();
     }
 
@@ -83,6 +83,11 @@ public class PersonneService {
         Personne personne = dansLaListe(listeId, personneId);
         personne.setNom(nomValide(nom));
         personne.setBudget(budgetValide(budget));
+    }
+
+    public void definirTermine(Long listeId, Long personneId, String login, boolean termine) {
+        acces.proprietaire(listeId, login);
+        dansLaListe(listeId, personneId).setTermine(termine);
     }
 
     /** Supprime la personne et tous les cadeaux qui lui sont destinés. */

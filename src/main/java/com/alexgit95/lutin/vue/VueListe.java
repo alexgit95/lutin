@@ -10,7 +10,7 @@ public record VueListe(Long id, String nom, String proprietaire, boolean lecteur
                        BigDecimal budgetGlobal, BigDecimal debourse, BigDecimal resteAPayer,
                        Map<Statut, Long> repartition, long totalCadeaux,
                        List<VueTag> tags, List<VueCadeau> cadeaux, List<VueGroupe> groupes,
-                       Long tagActif, int page, int totalPages) {
+                       Long tagActif, int page, int totalPages, Long personnesTerminees, Long totalPersonnes) {
 
     public record VuePersonne(Long id, String nom, BigDecimal budget) {
     }
@@ -18,6 +18,6 @@ public record VueListe(Long id, String nom, String proprietaire, boolean lecteur
     public record VueTag(Long id, String nom) {
     }
 
-    public record VueGroupe(Long personneId, String personne, List<VueCadeau> cadeaux) {
+    public record VueGroupe(Long personneId, String personne, List<VueCadeau> cadeaux, Boolean termine) {
     }
 }

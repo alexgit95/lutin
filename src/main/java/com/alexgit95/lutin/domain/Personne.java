@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
@@ -31,6 +32,10 @@ public class Personne {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal budget = BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    @ColumnDefault("false")
+    private boolean termine;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "liste_id", nullable = false)

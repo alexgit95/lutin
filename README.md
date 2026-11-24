@@ -18,8 +18,8 @@ Un utilisateur crée plusieurs listes (ex. « Noël 2026 »). Chaque liste s'ouv
 
 | Onglet | Contenu |
 |---|---|
-| **Dashboard** | Budget global, déboursé, reste à payer, cadeaux regroupés par personne (filtre par tag, changement de statut direct) et barre de workflow persistante |
-| **Personnes** | Création, modification (nom, budget) et suppression des destinataires, via un sous-menu `⋯` par personne (+ cadeau, modifier, supprimer). Chaque personne affiche une barre de budget : dépensé, reste à payer et budget. Import des personnes d'une autre de vos listes (voir ci-dessous) |
+| **Dashboard** | Budget global, déboursé, reste à payer, progression des personnes terminées, cadeaux regroupés par personne (filtre par tag, changement de statut direct) et barre de workflow persistante |
+| **Personnes** | Création, modification (nom, budget), suivi de complétion et suppression des destinataires via un sous-menu `⋯` par personne. Chaque personne affiche une barre de budget : dépensé, reste à payer et budget. Import des personnes d'une autre de vos listes (voir ci-dessous) |
 | **Remboursement** | Sous-vue « Épargne » pour les virements et alertes ; sous-vue « Tiers » pour les avances à récupérer par personne |
 | **Partage** | Partage de la liste en lecture seule avec un autre utilisateur choisi dans une liste déroulante |
 | **Réglages** | Renommer ou supprimer la liste |
@@ -31,11 +31,17 @@ Dans l'onglet **Personnes**, chaque ligne montre une barre : le **dépensé** en
 - Budget à 0 : texte seul, sans barre. Si le dépensé plus le reste à payer dépasse le budget, la barre s'adapte, un repère marque le budget et la mention « dépassé de X € » apparaît en rouge.
 - Le sous-menu `⋯` se referme au clic ailleurs, à l'ouverture d'un autre menu et avec Échap ; la suppression garde sa confirmation.
 
+### Personnes terminées
+Dans le menu `⋯` d'une personne, le propriétaire peut choisir « Marquer comme terminé » lorsque tous les cadeaux prévus sont présents dans la liste, quel que soit leur statut. L'action « Marquer comme à compléter » permet d'annuler ce choix. L'ajout ou la modification d'un cadeau ne change pas automatiquement cet état.
+
+L'en-tête du dashboard indique le nombre de personnes terminées sur le total de la liste, y compris les personnes sans cadeau et indépendamment du filtre par tag. Le groupe de cadeaux d'une personne terminée porte une coche, un libellé et une bordure verte. Ce suivi est privé : il n'est pas transmis aux lecteurs.
+
 ### Import de personnes depuis une autre liste
 Dans l'onglet **Personnes**, si vous possédez au moins une autre liste, le panneau « Importer depuis une autre liste » ouvre un **aperçu** des personnes de la liste choisie, avec leur budget.
 
 - Les personnes sont **cochées par défaut**. Celles dont le nom existe déjà dans la liste courante (sans tenir compte de la casse ni des espaces en bordure) sont grisées « déjà présente » et ne sont jamais importées.
 - L'import copie le **nom et le budget** uniquement : les cadeaux ne sont pas copiés, et la copie est indépendante de la source. Le budget global de la liste augmente du budget importé.
+- Les personnes importées commencent à compléter, même si elles étaient terminées dans la liste source ; les personnes déjà présentes conservent leur état.
 - Un compte rendu indique les personnes importées, le budget total ajouté et les personnes ignorées.
 - Seules **vos** listes sont concernées, source comme cible. Une liste simplement partagée avec vous ne peut pas servir de source (403).
 
@@ -92,6 +98,7 @@ Section « Sauvegarde » de l'écran `/admin`, réservée à l'administrateur et
 - **Import = remplacement total** : toutes les données actuelles, utilisateurs compris, sont supprimées puis remplacées par celles du fichier, en **une seule transaction** (une erreur annule tout). Les identifiants sont conservés, donc les adresses `/listes/{id}` et les liens publics `/p/{jeton}` restent valides, et les compteurs d'identifiants sont recalés.
 - **Garde-fous** : le fichier est d'abord vérifié en entier sans rien écrire (format, version, mode, tables et colonnes, types, longueurs, références, JSON complet) ; **votre compte administrateur doit figurer dans le fichier** avec le rôle administrateur (empreinte d'email en prod, login en dev) ; il faut saisir « IMPORTER » ; un seul import à la fois (409) ; taille limitée à 100 Mo.
 - **Un fichier n'est importable que dans le même mode** (dev ou prod) et la même version de format. En prod, restaurer sur une instance dont `EMAIL_HMAC_SECRET` diffère empêche de reconnaître les comptes autres que le vôtre.
+- Les sauvegardes du format actuel conservent l'état terminé des personnes. Le format est passé à la version 4 : les sauvegardes des versions précédentes ne sont pas importables par cette version ; conservez l'application compatible avec ces sauvegardes pour les restaurer.
 - **Données sensibles** : le fichier contient les empreintes d'emails, les hachés de mots de passe (dev) et les jetons des liens publics. Conservez-le en lieu sûr ; son contenu n'est jamais écrit dans les journaux.
 - **Limites** : l'export n'est pas garanti cohérent si quelqu'un écrit en même temps ; la requête de recalage des séquences PostgreSQL est validée par relecture (les tests tournent sur SQLite).
 - **Clés d'API** : l'export contient la table des clés d'API (nom, empreinte, dates, jamais la clé en clair). Restaurer une ancienne sauvegarde **remet en service les clés qui existaient alors**, y compris une clé révoquée depuis : révoquez-la de nouveau après une restauration.

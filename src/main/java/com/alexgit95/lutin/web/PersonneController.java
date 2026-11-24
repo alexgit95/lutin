@@ -110,6 +110,13 @@ public class PersonneController {
         return "redirect:/listes/" + listeId + "/personnes";
     }
 
+    @PostMapping("/{personneId}/termine")
+    public String definirTermine(@PathVariable Long listeId, @PathVariable Long personneId,
+                                @RequestParam boolean termine, Principal principal) {
+        personnes.definirTermine(listeId, personneId, principal.getName(), termine);
+        return "redirect:/listes/" + listeId + "/personnes";
+    }
+
     @PostMapping("/{personneId}/supprimer")
     public String supprimer(@PathVariable Long listeId, @PathVariable Long personneId, Principal principal) {
         personnes.supprimer(listeId, personneId, principal.getName());

@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 
 /** Personne d'une liste avec son budget, ce qui est dépensé (Commandé ou plus) et ce qui reste à payer. */
 public record VuePersonneBudget(Long id, String nom, BigDecimal budget, BigDecimal depense,
-                                BigDecimal resteAPayer) {
+                                BigDecimal resteAPayer, boolean termine) {
 
     private static final BigDecimal CENT = BigDecimal.valueOf(100);
 

@@ -24,6 +24,7 @@ entity "personne" as personne {
   --
   * nom : varchar(100)
   * budget : numeric(12,2)
+  * termine : boolean <<défaut false>>
   * liste_id : bigint <<FK>>
 }
 

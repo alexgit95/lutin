@@ -18,11 +18,16 @@
             <li class="personne-ligne" th:each="p : ${personnes}" th:classappend="${p.depasse()} ? 'depasse'">
                 <div class="personne-tete">
                     <span class="personne-nom" th:text="${p.nom()}">Maman</span>
+                    <span class="personne-terminee" th:if="${p.termine()}">&#10003; Tous les cadeaux dans la liste</span>
                     <details class="menu-actions">
                         <summary th:attr="aria-label='Actions pour ' + ${p.nom()}">&#8943;</summary>
                         <div class="menu-liste">
                             <a th:href="@{/listes/{id}/cadeaux/nouveau(id=${listeId},personneId=${p.id()})}">+ Cadeau</a>
                             <a th:href="@{/listes/{id}/personnes/{pid}/modifier(id=${listeId},pid=${p.id()})}">Modifier</a>
+                            <form th:action="@{/listes/{id}/personnes/{pid}/termine(id=${listeId},pid=${p.id()})}" method="post">
+                                <input type="hidden" name="termine" th:value="${!p.termine()}">
+                                <button type="submit" class="lien" th:text="${p.termine()} ? 'Marquer comme à compléter' : 'Marquer comme terminé'">Marquer comme terminé</button>
+                            </form>
                             <form th:action="@{/listes/{id}/personnes/{pid}/supprimer(id=${listeId},pid=${p.id()})}" method="post"
                                   onsubmit="return confirm('Supprimer cette personne et tous ses cadeaux ?')">
                                 <button type="submit" class="lien danger">Supprimer</button>

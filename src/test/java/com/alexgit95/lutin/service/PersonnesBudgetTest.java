@@ -81,6 +81,22 @@ class PersonnesBudgetTest {
                 .filter(p -> p.id().equals(personneId)).findFirst().orElseThrow();
     }
 
+        @Test
+        void etatTermineEstManuelIdempotentEtReserveAuProprietaire() {
+        assertThat(de(mamanId).termine()).isFalse();
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        cadeau(mamanId, "10", Statut.COMMANDE, false, false);
+        assertThat(de(mamanId).termine()).isTrue();
+        assertThatThrownBy(() -> personnesService.definirTermine(listeId, mamanId, "bob", false))
+            .isInstanceOf(AccessDeniedException.class);
+        Long autreListe = listesService.creer("alice", "Autre").getId();
+        assertThatThrownBy(() -> personnesService.definirTermine(autreListe, mamanId, "alice", false))
+            .isInstanceOf(ElementIntrouvableException.class);
+        personnesService.definirTermine(listeId, mamanId, "alice", false);
+        assertThat(de(mamanId).termine()).isFalse();
+        }
+
     @Test
     void lesPersonnesSontTrieesParNomAvecDepenseEtResteAPayer() {
         cadeau(mamanId, "85", Statut.COMMANDE, false, false);

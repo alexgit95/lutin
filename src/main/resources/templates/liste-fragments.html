@@ -3,8 +3,12 @@
 <body>
 <th:block th:fragment="cadeauxLot(lot, statuts)">
     <section class="groupe-cadeaux" th:each="groupe : ${lot.groupes()}"
+             th:classappend="${!lot.lecteur() and groupe.termine()} ? 'groupe-termine'"
              th:attr="data-groupe-personne=${groupe.personneId() == null ? 'masques' : groupe.personneId()}">
-        <h3 th:text="${groupe.personneId() == null ? 'Cadeaux masqués' : groupe.personne()}">Personne</h3>
+        <h3 th:unless="${!lot.lecteur() and groupe.termine()}"
+            th:text="${groupe.personneId() == null ? 'Cadeaux masqués' : groupe.personne()}">Personne</h3>
+        <h3 th:if="${!lot.lecteur() and groupe.termine()}"><span th:text="${groupe.personne()}">Personne</span>
+            <span class="personne-terminee">&#10003; Tous les cadeaux dans la liste</span></h3>
         <div class="defilement">
             <table>
                 <thead>

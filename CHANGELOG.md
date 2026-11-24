@@ -2,6 +2,14 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.19.0] - 2026-11-24
+
+### Added
+- Le propriétaire peut marquer une personne comme terminée ou à compléter. Le dashboard indique les personnes terminées par une coche et une bordure verte, avec un compteur global privé ; les cadeaux gardent leurs statuts indépendants.
+
+### Changed
+- Une nouvelle colonne mémorise cet état par liste ; les personnes importées repartent à compléter. Les sauvegardes au format 4 conservent l'état mais ne peuvent pas importer les formats antérieurs.
+
 ## [0.18.1] - 2026-11-23
 
 ### Changed
