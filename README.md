@@ -34,6 +34,8 @@ Dans l'onglet **Personnes**, chaque ligne montre une barre : le **dépensé** en
 ### Personnes terminées
 Dans le menu `⋯` d'une personne, le propriétaire peut choisir « Marquer comme terminé » lorsque tous les cadeaux prévus sont présents dans la liste, quel que soit leur statut. L'action « Marquer comme à compléter » permet d'annuler ce choix. L'ajout ou la modification d'un cadeau ne change pas automatiquement cet état.
 
+Dans l'onglet **Personnes**, les personnes à compléter sont affichées en premier, puis les personnes terminées sont regroupées sous le titre « Terminées », séparé du premier groupe par un espace et un trait. Chaque groupe conserve son ordre alphabétique ; le titre disparaît lorsqu'aucune personne n'est terminée.
+
 L'en-tête du dashboard indique le nombre de personnes terminées sur le total de la liste, y compris les personnes sans cadeau et indépendamment du filtre par tag. Le groupe de cadeaux d'une personne terminée porte une coche, un libellé et une bordure verte. Ce suivi est privé : il n'est pas transmis aux lecteurs.
 
 ### Import de personnes depuis une autre liste
