@@ -14,8 +14,9 @@
             <button type="submit">Ajouter</button>
         </form>
         <p class="vide" th:if="${#lists.isEmpty(personnes)}">Aucune personne.</p>
-        <ul class="personnes-budget">
-            <li class="personne-ligne" th:each="p : ${personnes}" th:classappend="${p.depasse()} ? 'depasse'">
+                <ul class="personnes-budget" th:unless="${#lists.isEmpty(personnesACompleter)}">
+                    <th:block th:each="p : ${personnesACompleter}">
+                        <li class="personne-ligne" th:fragment="lignePersonne(p)" th:classappend="${p.depasse()} ? 'depasse'">
                 <div class="personne-tete">
                     <span class="personne-nom" th:text="${p.nom()}">Maman</span>
                     <span class="personne-terminee" th:if="${p.termine()}">&#10003; Tous les cadeaux dans la liste</span>
@@ -49,7 +50,16 @@
                         <b><span th:replace="~{fragments :: montant(${p.depassement()})}"></span></b></span>
                 </p>
             </li>
+          </th:block>
         </ul>
+        <th:block th:unless="${#lists.isEmpty(personnesTerminees)}">
+            <h2>Terminées</h2>
+            <ul class="personnes-budget">
+                <th:block th:each="p : ${personnesTerminees}">
+                    <th:block th:replace="~{personnes :: lignePersonne(${p})}"></th:block>
+                </th:block>
+            </ul>
+        </th:block>
     </section>
     <section class="panneau" th:unless="${#lists.isEmpty(sources)}">
         <h2>Importer depuis une autre liste</h2>

@@ -4,6 +4,7 @@ import com.alexgit95.lutin.domain.Personne;
 import com.alexgit95.lutin.service.DashboardService;
 import com.alexgit95.lutin.service.PersonneService;
 import com.alexgit95.lutin.service.RequeteInvalideException;
+import com.alexgit95.lutin.vue.VuePersonneBudget;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +34,10 @@ public class PersonneController {
     @GetMapping
     public String lister(@PathVariable Long listeId, Principal principal, Model model) {
         model.addAttribute("listeId", listeId);
-        model.addAttribute("personnes", personnes.lister(listeId, principal.getName()));
+        List<VuePersonneBudget> listePersonnes = personnes.lister(listeId, principal.getName());
+        model.addAttribute("personnes", listePersonnes);
+        model.addAttribute("personnesACompleter", listePersonnes.stream().filter(p -> !p.termine()).toList());
+        model.addAttribute("personnesTerminees", listePersonnes.stream().filter(VuePersonneBudget::termine).toList());
         model.addAttribute("sources", personnes.sourcesPossibles(listeId, principal.getName()));
         return "personnes";
     }

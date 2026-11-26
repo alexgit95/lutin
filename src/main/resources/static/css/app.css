@@ -204,9 +204,11 @@ tr.masque td { color: #777; }
 .personnes li.deja { opacity: .55; }
 
 .personnes-budget { list-style: none; margin: 0; padding: 0; }
+.personnes-budget + h2 { margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #278454; }
 .personne-ligne { padding: .8rem 0; border-bottom: 1px solid var(--bord); }
 .personne-tete { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .personne-nom { font-weight: 600; }
+.personne-tete .menu-actions { margin-left: auto; }
 .menu-actions { position: relative; }
 .menu-actions summary { display: flex; width: 2.2rem; height: 2.2rem; align-items: center; justify-content: center; border-radius: 999px; background: #e8e9fb; color: var(--accent); font-size: 1.2rem; line-height: 1; list-style: none; cursor: pointer; user-select: none; }
 .menu-actions summary::-webkit-details-marker { display: none; }

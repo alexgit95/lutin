@@ -2,6 +2,17 @@
 
 Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [0.19.2] - 2026-11-26
+
+### Changed
+- Une marge et un séparateur vert distinguent plus clairement les personnes terminées des personnes à compléter, sans modifier leur ordre ni leurs actions.
+
+## [0.19.1] - 2026-11-26
+
+### Changed
+- L'onglet Personnes affiche d'abord les personnes à compléter, puis regroupe les personnes terminées sous un titre dédié, chaque groupe conservant le tri par nom. Le regroupement réutilise le statut existant sans modifier le schéma ni l'import.
+- Sur mobile, le menu d'une personne reste aligné à droite lorsqu'il passe à la ligne, afin de rester accessible à l'écran.
+
 ## [0.19.0] - 2026-11-24
 
 ### Added

@@ -95,6 +95,58 @@ class PersonnesBudgetWebTest {
         return texte.split(java.util.regex.Pattern.quote(motif), -1).length - 1;
     }
 
+    private static void verifierOrdre(String html, String... elements) {
+        int positionPrecedente = -1;
+        for (String element : elements) {
+            int position = html.indexOf(element);
+            assertThat(position).as(element).isGreaterThan(positionPrecedente);
+            positionPrecedente = position;
+        }
+    }
+
+        @Test
+        void regroupementSuitLesStatutsEtConserveLOrdreEtLesActions() throws Exception {
+        Long aliceId = personnesService.creer(listeId, "alice", "Alice", BigDecimal.TEN).getId();
+        Long bernardId = personnesService.creer(listeId, "alice", "Bernard", BigDecimal.TEN).getId();
+        personnesService.definirTermine(listeId, bernardId, "alice", true);
+        personnesService.definirTermine(listeId, papaId, "alice", true);
+
+        String html = page();
+        verifierOrdre(html, ">Alice</span>", ">Maman</span>", "<h2>Terminées</h2>",
+            ">Bernard</span>", ">Papa</span>");
+        assertThat(occurrences(html, "<details class=\"menu-actions\"")).isEqualTo(4);
+        assertThat(occurrences(html, "budget-texte")).isEqualTo(4);
+        assertThat(occurrences(html, "Marquer comme à compléter")).isEqualTo(2);
+        assertThat(occurrences(html, "Marquer comme terminé")).isEqualTo(2);
+
+        mvc.perform(post("/listes/" + listeId + "/personnes/" + aliceId + "/termine")
+            .with(user("alice")).with(csrf()).param("termine", "true"))
+            .andExpect(status().is3xxRedirection());
+        mvc.perform(post("/listes/" + listeId + "/personnes/" + papaId + "/termine")
+            .with(user("alice")).with(csrf()).param("termine", "false"))
+            .andExpect(status().is3xxRedirection());
+        verifierOrdre(page(), ">Maman</span>", ">Papa</span>", "<h2>Terminées</h2>",
+            ">Alice</span>", ">Bernard</span>");
+        }
+
+        @Test
+        void regroupementGereLesGroupesVidesEtLaListeVide() throws Exception {
+        String html = page();
+        verifierOrdre(html, ">Maman</span>", ">Papa</span>");
+        assertThat(html).doesNotContain("<h2>Terminées</h2>");
+
+        personnesService.definirTermine(listeId, mamanId, "alice", true);
+        personnesService.definirTermine(listeId, papaId, "alice", true);
+        html = page();
+        verifierOrdre(html, "<h2>Terminées</h2>", ">Maman</span>", ">Papa</span>");
+        assertThat(occurrences(html, "<ul class=\"personnes-budget\"")).isEqualTo(1);
+
+        personnesService.supprimer(listeId, mamanId, "alice");
+        personnesService.supprimer(listeId, papaId, "alice");
+        assertThat(page()).contains("Aucune personne.").doesNotContain("<h2>Terminées</h2>")
+            .doesNotContain("<ul class=\"personnes-budget\"");
+        }
+
         @Test
         void etatTermineEstProtegeEtAfficheDansLeMenu() throws Exception {
         String chemin = "/listes/" + listeId + "/personnes/" + mamanId + "/termine";
